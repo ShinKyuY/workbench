@@ -1,0 +1,9 @@
+{
+  "name": "ky-skills",
+  "description": "커스텀 스킬 모음: handoff(작업 인수인계), analyze-ml-repo(ML 레포 분석), refactor(리팩토링 파이프라인), md2html(Markdown→HTML), parquet-viewer(Parquet 뷰어)",
+  "version": "0.1.0",
+  "author": {
+    "name": "ky.shin",
+    "email": "p37329@gmail.com"
+  }
+}

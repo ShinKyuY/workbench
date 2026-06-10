@@ -1,0 +1,47 @@
+{
+  "skill_name": "refactor",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "long-method-extraction",
+      "prompt": "이 파일에 있는 process_order 함수가 200줄 가까이 되는데, 한 함수에서 검증, 할인 계산, 결제, 알림 전송까지 다 해. 이거 좀 깔끔하게 분리해줘.",
+      "expected_output": "Long Method 징후를 탐지하고, Extract Method 기법으로 검증/할인/결제/알림을 각각 독립 함수로 분리. 테스트 보존 확인.",
+      "files": ["evals/files/long-method/order_processing.py", "evals/files/long-method/test_order_processing.py"],
+      "expectations": [
+        "process_order가 더 작은 함수들로 분리되어, 검증/할인/결제/알림 중 3개 이상이 독립 함수(또는 메서드)로 존재한다",
+        "기존 unittest 테스트 12개가 단언(assert) 수정 없이 모두 통과한다",
+        "리팩토링 후 최대 함수 길이가 원본 process_order(약 190줄)보다 뚜렷이 감소했다 (최대 80줄 이하)",
+        "process_order의 공개 시그니처(함수명과 파라미터)가 유지된다",
+        "최종 보고에 Before/After 품질 비교(함수 길이 등 수치)가 포함된다"
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "god-class-architecture",
+      "prompt": "우리 프로젝트에서 UserService 클래스가 DB 접근, 이메일 전송, 로깅, 인증까지 전부 처리하고 있어서 수정할 때마다 여러 곳이 같이 깨져. 아키텍처 관점에서 봐주고 리팩토링해줘.",
+      "expected_output": "God Class + SRP 위반 + Shotgun Surgery 탐지. 아키텍처 리뷰에서 결합도 높음 판정. Extract Class로 책임 분리 계획 수립 및 실행. 테스트 부재 인지 및 characterization test 대응.",
+      "files": ["evals/files/god-class/user_service.py"],
+      "expectations": [
+        "UserService의 책임 중 2개 이상(DB 접근/이메일/로깅/인증·세션)이 별도 클래스 또는 모듈로 분리되었다",
+        "테스트가 없음을 인지하고 characterization test를 작성했거나, 작성 필요성을 보고서에 명시했다",
+        "아키텍처 리뷰 결과(SRP 위반, 결합도 등)가 보고에 포함된다",
+        "리팩토링 후 코드가 import 가능하고 register → login → verify_session 흐름이 정상 동작한다",
+        "UserService의 공개 메서드 인터페이스(register, login, verify_session, logout, reset_password, update_email, deactivate_user, get_user)가 보존된다"
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "crud-duplication",
+      "prompt": "API 라우터 파일에서 거의 동일한 CRUD 핸들러가 users, products, orders 세 곳에 복사-붙여넣기 되어 있어. 중복을 좀 정리해줘.",
+      "expected_output": "Duplicate Code 탐지. 공통 CRUD 로직을 Extract Method 또는 제네릭 핸들러로 추출. DRY 원칙 적용. 테스트 보존.",
+      "files": ["evals/files/crud-dup/routes.py", "evals/files/crud-dup/test_routes.py"],
+      "expectations": [
+        "users/products/orders의 중복 CRUD 로직이 공통 헬퍼/팩토리/제네릭 구현으로 추출되었다",
+        "기존 unittest 테스트 9개가 단언(assert) 수정 없이 모두 통과한다",
+        "routes.py의 총 줄 수가 원본(약 220줄) 대비 감소했다",
+        "ROUTES 라우팅 테이블이 15개 엔드포인트를 그대로 유지한다",
+        "최종 보고에 중복 제거 전후 비교가 포함된다"
+      ]
+    }
+  ]
+}

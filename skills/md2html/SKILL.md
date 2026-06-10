@@ -1,0 +1,154 @@
+---
+name: md2html
+description: Convert long-form Markdown (plan, spec, system design, RFC, runbook, postmortem, brainstorm, notes) into a single self-contained HTML page with Mermaid diagrams, step timelines, callouts, sidebar TOC. Claude-orange light+dark theme. English/Korean UI labels. Portable across Claude Code / Codex / Antigravity / any AI agent.
+trigger: /md2html
+---
+
+# /md2html
+
+Convert a verbose Markdown document into a single, self-contained HTML file that a tired human can actually scan: diagrams instead of paragraphs, step cards instead of numbered lists, callouts for the parts that matter.
+
+## Usage
+
+```
+/md2html <file.md>             # output <file>.html next to source
+/md2html <file.md> --out X.html # custom output path
+/md2html                       # if no arg, ask user which file
+```
+
+## Skill files (resolved relative to this SKILL.md)
+
+- `template.html`   — HTML skeleton with embedded CSS (Claude orange light+dark), Mermaid CDN, theme toggle, TOC sidebar, footer. Contains `{{PLACEHOLDER}}` strings and `<!-- COMMENT -->` slots. **Do NOT read this file** — its contract (placeholder list + content slots) is fully documented below, and `scripts/build.py` does the assembly. Reading 1,200 lines of CSS wastes context and tempts you to re-type it, which is the #1 source of drift and cost.
+- `components.md`  — catalog of HTML snippets you must copy verbatim (step cards, callouts, mermaid blocks, pros-cons, comparison cards, collapsibles). **Read this in full before writing content.** Do not invent CSS classes or skip the catalog.
+- `scripts/build.py` — assembler. Takes your metadata JSON + TOC fragment + content fragment, merges them into `template.html`, and verifies the result (leftover placeholders, broken anchors, mermaid syntax, emoji). You author content; it does the mechanics.
+- `examples/`     — reference `<doc>.md` → `<doc>.html` pairs. Optional calibration: if unsure what good output looks like, read only the part of an example `.html` between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`.
+
+## What you must do when invoked
+
+Follow these steps in order. Do not skip.
+
+### Step 1 — Resolve inputs
+
+1. Determine the source file from the user's invocation. If none given, ask which `.md` file to convert (in the language of the conversation) and stop.
+2. Read the source `.md` fully.
+3. Read `components.md` from the same directory as this SKILL.md. Do not read `template.html` (see above).
+
+### Step 2 — Analyze the source document
+
+Do this analysis silently in your head (or as one short summary line to the user). Identify:
+
+- **Language of the source** — detect from the actual prose, not the filename. Korean source → `<html lang="ko">` + Korean UI labels; any other language → `<html lang="en">` + English UI labels. Body content always stays in the source language.
+
+  | Key            | EN                 | KO (한국어)         |
+  |---             |---                 |---                  |
+  | TOC title      | Contents           | 목차                |
+  | Read-time      | ~N min read        | ~N분 소요           |
+  | Recommended    | ★ Recommended      | ★ 추천              |
+  | Key point      | Key point          | 핵심                |
+  | Pros           | ✓ Pros             | ✓ 장점              |
+  | Cons           | ✕ Cons             | ✕ 단점              |
+  | Print tooltip  | Print / Save PDF   | 인쇄 / PDF 저장     |
+  | Theme tooltip  | Toggle theme       | 테마 전환           |
+  | Source: prefix | Source:            | 소스:               |
+
+  The "Recommended" badge is configured via the `--rec-label` CSS variable set on `<html>` (no per-language CSS needed) — see `{{REC_LABEL}}` below.
+
+- **Title** — from first H1 or filename. Title should be ≤ 80 chars.
+- **Subtitle** — first paragraph after H1, or the document's TL;DR sentence. ≤ 200 chars.
+- **Doc type** — infer one of: `PLAN`, `SPEC`, `SYSTEM DESIGN`, `RFC`, `RUNBOOK`, `POSTMORTEM`, `BRAINSTORM`, `NOTES`. Pick the closest match based on the document's *purpose*, not its filename. Brainstorm = exploring options with rationale; Plan = ordered steps to a goal; Spec = exact behavior contract; System design = architecture + tradeoffs; RFC = proposal seeking feedback; Runbook = operational procedure; Postmortem = incident review. The uppercase code in the eyebrow stays universal; the topbar `BRAND_LABEL` localizes (Plan / 계획).
+- **Reading time** — words ÷ 250, round to nearest minute. For Korean sources whitespace word-counting undercounts badly — use characters ÷ 500 instead. Format follows the language table: `~N min read` / `~N분 소요`.
+- **Section map** — walk each H2/H3 and tag with the BEST component using §11 cheatsheet in `components.md`:
+  - numbered action list → Timeline
+  - architecture/flow prose → Mermaid
+  - "pros/cons", "장점/단점" → Pros-Cons
+  - "option A vs B" → Comparison cards. If the document records a decision, put `class="recommended"` on the chosen card (★ badge) — even when each option also lists pros/cons. The reader must see which option won without hunting through prose.
+  - critical conclusion → Key-point highlight
+  - warnings/decisions → Callouts
+  - long appendix → Collapsible
+  - everything else → plain `<h2>` + `<p>`
+
+### Step 3 — Build the output HTML
+
+You write three small part files; `scripts/build.py` merges them into `template.html` and verifies the result. Never re-type the template yourself — that costs ~1,000 lines of output and risks silently corrupting CSS/JS.
+
+1. **Write `<output-dir>/.md2html-parts/meta.json`** — one value per template placeholder (all values come from Step 2 analysis, language-matched):
+   - `{{LANG}}` → `ko` for Korean sources, `en` otherwise
+   - `{{REC_LABEL}}` → text shown on the "Recommended" comparison-card badge: `★ Recommended` / `★ 추천`. Sets the `--rec-label` CSS variable on `<html>`. If you forget this, CSS falls back to `★ Recommended`.
+   - `{{TITLE}}` (appears twice: `<title>` and `.doc-title`)
+   - `{{SUBTITLE}}`
+   - `{{DOC_TYPE}}` → universal uppercase code: `PLAN`, `SPEC`, `SYSTEM DESIGN`, `RFC`, `RUNBOOK`, `POSTMORTEM`, `BRAINSTORM`, `NOTES`
+   - `{{SOURCE_FILE}}` → basename of source (e.g. `plan.md`)
+   - `{{DATE}}` → ISO date or localized "Updated <today>"
+   - `{{READ_TIME}}` → localized reading time, e.g. `~3 min read` / `~3분 소요`
+   - `{{BRAND_LABEL}}` → localized doc-type label for the topbar
+   - `{{TOC_TITLE}}` → localized "Contents" (also used as `aria-label` for the TOC drawer)
+   - `{{PRINT_TOOLTIP}}` → localized print tooltip
+   - `{{THEME_TOOLTIP}}` → localized theme-toggle tooltip
+   - `{{CLOSE_LABEL}}` → localized "Close" (used for the mobile TOC drawer close button): `Close` / `닫기`
+   - `{{SKIP_LINK_LABEL}}` → localized skip-to-content link text: `Skip to content` / `본문 바로가기`
+   - `{{FOOTER_NOTE}}` → localized source attribution: `Source: plan.md` / `소스: plan.md`
+2. **Write `<output-dir>/.md2html-parts/toc.html`** — one `<a>` per H2/H3 (see §2 in components.md). Generate stable kebab-case `id` from heading text. Skip this file for very short documents (see Edge cases).
+3. **Write `<output-dir>/.md2html-parts/content.html`** — the document body, section by section, using components from `components.md`. Each section must:
+   - Start with `<h2 id="..."> ` (matching the TOC entry).
+   - Use ONE primary component per logical chunk (don't stack 3 callouts in a row).
+   - Preserve original meaning — do not summarize away technical detail; condense only filler/repetition.
+4. **Run the assembler** (script path relative to this SKILL.md):
+
+   ```bash
+   python3 <skill-dir>/scripts/build.py \
+     --meta <parts>/meta.json --toc <parts>/toc.html \
+     --content <parts>/content.html --out <output>.html
+   # short doc without a sidebar: omit --toc and add --no-toc
+   ```
+
+   It substitutes placeholders, injects your fragments, then verifies: no leftover `{{PLACEHOLDER}}`, every anchor resolves to an `id`, mermaid blocks start with a supported diagram type (`flowchart`, `sequenceDiagram`, `erDiagram`, `stateDiagram-v2`, `gantt`, … — never bare `graph`), no emoji glyphs. On `BUILD FAILED`, fix the named problem in your part file and re-run. On `BUILD OK`, delete the `.md2html-parts/` directory.
+
+   **Fallback** — if `python3` is unavailable in your environment: read `template.html`, build the full output buffer in memory (placeholders + TOC + content slot between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`), `Write` once, and run the Step 4 checks manually by re-reading your generated sections.
+
+### Step 4 — Report
+
+`build.py` already verified the structure (that's its exit condition), so don't re-read the output file. Report back to the user with:
+- Output file path
+- 1-line summary of what changed (e.g. *"Rendered 7 sections: 1 mermaid flow, 2 step timelines, 4 callouts. ~6 min read."* — written in the conversation language)
+- A reminder they can open it with `xdg-open <file>.html` (Linux) / `open <file>.html` (mac).
+
+## Critical rules
+
+1. **Never paraphrase technical content into vague prose.** A step `0042_user_schema.sql 마이그레이션 실행` must keep that exact filename — don't change it to `새 마이그레이션 실행`.
+2. **One component per chunk.** Don't wrap a callout inside a step card inside a collapsible. Keep nesting flat.
+3. **Mermaid > prose for any flow ≥ 3 hops.** If the source says "A calls B, B calls C, C writes to the DB", make a diagram.
+4. **Key-point highlights are rare.** Max 1 per H2 section, ideally 2-3 total per document.
+5. **UI text follows the detected source language** — Korean source → Korean labels, anything else → English labels (see the table in Step 2). Code, commands, file names, library names, error messages stay verbatim regardless of language.
+6. **Self-contained output.** No external references beyond what `template.html` already ships (mermaid CDN + Google Fonts, both degrade gracefully offline). Never add more.
+7. **Do not modify `template.html`, `components.md`, or `scripts/build.py`** — those are the skill's source of truth. Only write the part files and the output `.html`.
+8. **Use SVG icons only — never emojis.** Every icon is `<svg class="..."><use href="#i-NAME"/></svg>` referencing the sprite at the top of `<body>`. See §13 in `components.md` for the catalog. No emoji glyphs anywhere in callouts, doc-meta, topbar, or body content.
+9. **Anchor links and copy-to-clipboard auto-inject via JS** — do NOT add them manually. Just give H2/H3 a proper `id`, and put code in `<pre><code>`. The template's boot script handles the rest.
+10. **Wrap wide tables in `.table-wrap`** — see components.md §14b. Tables ≥ 4 columns or with long cells need the wrapper for mobile scroll.
+11. **Use `<figure>` + `<figcaption>` for images** with descriptive `alt`. See components.md §14a.
+
+## Cross-AI compatibility
+
+This skill is designed to run identically on:
+
+- **Claude Code** — install at `~/.claude/skills/md2html/` (this directory, symlinked or copied). Invoke with `/md2html <file>`.
+- **Codex CLI** — copy `SKILL.md` content to `~/.codex/prompts/md2html.md`, keep `template.html`, `components.md`, and `scripts/build.py` at a stable absolute path, update the file references in SKILL.md if needed. Invoke with `/md2html`.
+- **Antigravity** — add SKILL.md as a custom prompt/agent instruction, ensure the agent has Read/Write tool access to the skill folder.
+
+Runtime dependencies: `python3` (stdlib only) for `scripts/build.py` — available out of the box on macOS/Linux and in every major agent CLI sandbox; if it's truly missing, use the manual fallback in Step 3. The output HTML itself only needs the `mermaid` CDN, resolved at open time. No npm/pip install required.
+
+## Edge cases
+
+- **Source has no headings** — wrap content in one `<h2 id="content">Content</h2>` (KO: `내용`) and infer logical breaks from blank lines + topic shifts.
+- **Source has existing mermaid code blocks** — keep them, just rewrap in `<figure class="diagram">` with caption.
+- **Source has HTML embedded** — pass through as-is inside `<div>` if safe, else escape.
+- **Source is very short (< 200 words, or < 400 characters for CJK)** — skip the TOC sidebar: omit `--toc` and pass `--no-toc` to `build.py` (it removes the sidebar and the mobile drawer trigger for you).
+- **Source is very long (> 5000 words)** — collapse low-priority sections by default with `<details>`.
+- **Output file already exists** — overwrite. The source `.md` is canonical; HTML is regenerated artifact.
+
+## Anti-patterns
+
+- ❌ Re-typing `template.html` into the output (or assembling it via many Edit calls) — slow, expensive, and one typo silently breaks CSS/JS. Always go through `scripts/build.py`.
+- ❌ Adding new CSS via `<style>` — extend `template.html` instead and tell the user.
+- ❌ Translating proper nouns or code identifiers.
+- ❌ "Improving" the source by adding info not in the original.
+- ❌ Reporting success without running Step 4 verification.
