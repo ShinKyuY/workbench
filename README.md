@@ -1,4 +1,4 @@
-# custom-skills
+# workbench
 
 Claude Code 커스텀 스킬 모음 플러그인.
 
@@ -15,11 +15,11 @@ Claude Code 커스텀 스킬 모음 플러그인.
 ## 설치
 
 ```
-/plugin marketplace add ShinKyuY/custom-skills
-/plugin install ky-skills@kyshin
+/plugin marketplace add ShinKyuY/workbench
+/plugin install workbench@shinkyuy
 ```
 
-스킬은 자동으로 트리거되며, 직접 호출 시 네임스페이스가 붙습니다 (예: `/ky-skills:md2html`).
+스킬은 자동으로 트리거되며, 직접 호출 시 네임스페이스가 붙습니다 (예: `/workbench:md2html`).
 
 ## 업데이트
 

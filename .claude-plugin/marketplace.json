@@ -1,5 +1,5 @@
 {
-  "name": "kyshin",
+  "name": "shinkyuy",
   "owner": {
     "name": "ky.shin",
     "email": "p37329@gmail.com"
@@ -7,7 +7,7 @@
   "description": "ky.shin의 Claude Code 커스텀 스킬 마켓플레이스",
   "plugins": [
     {
-      "name": "ky-skills",
+      "name": "workbench",
       "source": "./",
       "description": "커스텀 스킬 모음: handoff, analyze-ml-repo, refactor, md2html, parquet-viewer"
     }
