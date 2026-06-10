@@ -1,4 +1,4 @@
-# claude-skills
+# custom-skills
 
 Claude Code 커스텀 스킬 모음 플러그인.
 
@@ -15,7 +15,7 @@ Claude Code 커스텀 스킬 모음 플러그인.
 ## 설치
 
 ```
-/plugin marketplace add ShinKyuY/claude-skills
+/plugin marketplace add ShinKyuY/custom-skills
 /plugin install ky-skills@kyshin
 ```
 
@@ -27,17 +27,19 @@ Claude Code 커스텀 스킬 모음 플러그인.
 /plugin marketplace update
 ```
 
-## CLAUDE.md (전역 지침)
+## 전역 지침 (CLAUDE.md / AGENTS.md)
 
-이 repo의 [`CLAUDE.md`](./CLAUDE.md)는 플러그인 설치와 **무관하게 동봉만** 된 파일입니다.
-설치해도 자동 적용되지 않으며, 원하는 사람만 내용을 본인 전역 지침에 복사해서 사용하세요.
+[`CLAUDE.md`](./CLAUDE.md)(Claude Code용)와 [`AGENTS.md`](./AGENTS.md)(Codex CLI 등 기타 에이전트용)는
+플러그인 설치와 **무관하게 동봉만** 된 파일입니다.
+설치해도 자동 적용되지 않으며, 원하는 사람만 본인 전역 지침에 복사해서 사용하세요.
 
 ```bash
 # 전체를 그대로 쓰려면 (기존 파일이 있다면 백업 후)
 cp CLAUDE.md ~/.claude/CLAUDE.md
+cp AGENTS.md ~/.codex/AGENTS.md
 ```
 
-또는 필요한 섹션만 골라 본인 `~/.claude/CLAUDE.md`에 붙여넣어도 됩니다.
+또는 필요한 섹션만 골라 붙여넣어도 됩니다.
 
 ## 라이선스
 
