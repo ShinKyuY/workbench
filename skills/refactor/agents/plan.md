@@ -74,3 +74,8 @@ When refactoring untested code:
 
 Return a numbered list of Steps.
 Each Step must be an independently committable unit.
+
+End the report with a status line —
+`DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED` plus one line of
+reason. If the analysis input is too thin to plan from, report
+NEEDS_CONTEXT rather than padding the plan with assumptions.

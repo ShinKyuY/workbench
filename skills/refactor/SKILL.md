@@ -37,7 +37,7 @@ cost in itself; too little leads to behavior-change accidents.
 |------|---------|----------|
 | **Small** (소규모) | 1–2 functions, part of one file | Run Phase 1 inline, quickly (skip Phase 2). Report the analysis summary + a 3–5 line plan at once, then execute → verify after confirmation |
 | **Medium** (중규모) | 1–3 files | Full pipeline, with subagents |
-| **Large** (대규모) | Module/package level | Full pipeline + architecture review required. Per-phase user agreement, propose splitting into multiple PRs |
+| **Large** (대규모) | Module/package level | Full pipeline + architecture review required. Shard Phase 1 into scoped agents (see "Dynamic fan-out"). Per-phase user agreement, propose splitting into multiple PRs |
 
 If the request is review-only ("review the architecture", "구조 점검해줘"),
 run Phase 1+2 and stop at the report. Execute only when the user asks.
@@ -55,6 +55,8 @@ run Phase 1+2 and stop at the report. Execute only when the user asks.
 - Phase 3 depends on the 1+2 results → sequential
 - Each Step in Phase 4 depends on the previous Step → sequential
 - Phase 5's test run and quality measurement can run in parallel
+- Agent count per phase is **not fixed** — scale it to the target size
+  per "Dynamic fan-out" below
 
 ## Subagent execution protocol (subagent 실행 프로토콜)
 
@@ -74,10 +76,86 @@ wrong target or produce results that cannot be compared:
 - Name spawned agents so the role is visible: `refactor-analyze`,
   `refactor-plan`, and so on. Plan in particular collides with the
   built-in Plan agent type, so spawning it unlabeled invites confusion.
+- **Every subagent report ends with a status line**:
+  `DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED` plus one line of
+  reason (the agent files request this; repeat it in the spawn prompt).
+  Orchestrator handling — `DONE_WITH_CONCERNS`: read the concern before
+  using the result; `NEEDS_CONTEXT`: supply what is missing and
+  re-dispatch; `BLOCKED`: never re-dispatch unchanged — add context,
+  split the work smaller, or raise it at the next checkpoint. Make clear
+  in every spawn prompt that escalating is acceptable: a subagent that
+  guesses instead of reporting NEEDS_CONTEXT produces confident-looking
+  wrong analysis, which is worse than no analysis.
+- **Treat subagent reports as claims, not evidence.** Anything cheap to
+  re-check in the main conversation (a test command's exit status,
+  `git diff --stat` against the planned scope), re-check before acting
+  on the report.
 - **If subagents are unavailable** (no nested agents, etc.), read the same
   agent file directly and perform the phases inline, sequentially. The
   pipeline's value is phase separation, not parallelism — keep the phases
   and their artifacts identical even when inline.
+
+## Dynamic fan-out (동적 분할)
+
+One subagent per phase is the default, not a fixed rule. Scale the count
+to the target, with two failure modes in mind: a single agent skimming
+50 files produces shallow findings everywhere, while a dozen shards
+produce a merge problem worse than the analysis itself. The band below
+keeps both out.
+
+| Phase | Default | May become | When |
+|-------|---------|------------|------|
+| 1 Analyze | 1 agent | 2–5 scoped shards (hard cap 5) | Large target spanning 2+ module/directory boundaries, roughly 10+ files |
+| 2 Architecture | 1 agent | 2–5 lens agents, whole view each (hard cap 5) | Large target; split by lens, never by scope |
+| 3 Plan | 1 agent | never sharded | — |
+| 4 Execute | 1 per Step, sequential | never parallel | — |
+| 5 Verify | 1 agent | 2 (test run ∥ metrics) | slow test suite or large baseline table |
+
+**Sharding Phase 1:**
+
+- **Split along module/directory boundaries**, never by file count
+  alone. Duplication and Feature Envy are visible only when related
+  files share one scope — an arbitrary split hides exactly the signs
+  Phase 1 exists to find. If the natural boundaries give more than 5
+  scopes, group adjacent modules rather than raising the cap.
+- Each shard gets the same `agents/analyze.md`, an explicit file list
+  for its scope, and the same output format — uniform shape is what
+  makes the merge possible (details in analyze.md "Scoped mode").
+- **Exactly one shard runs the test suite**; say which one in its spawn
+  prompt. The others only inventory test files in their scope.
+  Concurrent suite runs collide (ports, fixtures, temp DBs) and measure
+  the same thing N times.
+- Spawn all shards **and** the Architecture agent in a single message,
+  or they will not actually run concurrently.
+
+**Model selection (when the environment supports it):** Analyze shards
+follow a fixed checklist over a bounded scope and can run on a
+faster/cheaper model. Keep Architecture and Plan on the session's main
+model — they carry the judgment-heavy work.
+
+**Merging shard reports (at Checkpoint ①):** before the normal
+Analyze+Architecture merge, combine the shard baseline tables into one
+(max of maxes, counts summed, averages recomputed weighted by lines) and
+dedup signs across shards. Treat **similar signs reported by two or more
+shards as a finding in itself** — cross-module duplication and
+re-implemented utilities are invisible to any single shard and surface
+only at this merge.
+
+**Phase 2 splits by lens, never by scope:** circular dependencies,
+layer violations, and coupling exist only in the whole-system view — a
+module-scoped shard destroys the very signal it looks for. When a Large
+target is too much for one agent, fan out into 2–5 **lens agents**
+(hard cap 5), each given the **whole** target but a single concern:
+dependencies / SOLID / anti-patterns / layering / extensibility
+(definitions and grouping rules in architecture.md "Lens mode"). The
+cost is reading the same structure up to 5 times — acceptable because
+Phase 2 reads module inventories and import graphs, not every line.
+Hand each agent the module inventory and entrypoints rather than
+expecting a line-by-line read.
+
+**Why Phase 4 never parallelizes:** each green test run is the safety
+gate for the next Step. Parallel Steps racing one working tree turn
+"test failure = behavior change" into noise.
 
 ## Safety precondition: pre-flight checks (시작 전 점검)
 
@@ -100,7 +178,8 @@ starting Phase 4 (details in `agents/execute.md`):
 > Goal: objectively understand the target's current state and record the
 > **baseline metrics** used for the Phase 5 comparison.
 
-Spawn the **Analyze subagent** (`agents/analyze.md`). It covers:
+Spawn the **Analyze subagent** (`agents/analyze.md`) — for Large
+targets, 2–5 scoped shards of it (see "Dynamic fan-out"). It covers:
 
 - **Defect sign detection** — size (Long Method/Large Class), structure
   (God Class, Feature Envy), duplication & derivable state,
@@ -131,7 +210,8 @@ status, and baseline metrics.
 > the code level.
 
 Spawn the **Architecture subagent** (`agents/architecture.md`),
-**in parallel** with Phase 1. It covers:
+**in parallel** with Phase 1 — for Large targets, optionally 2–5 lens
+agents (see "Dynamic fan-out"). It covers:
 
 - SOLID principles check (SRP/OCP/LSP/ISP/DIP)
 - Coupling & cohesion analysis, circular dependency check
@@ -141,11 +221,20 @@ Spawn the **Architecture subagent** (`agents/architecture.md`),
 The report follows the "Output format" section of
 `agents/architecture.md`.
 
-**Checkpoint ①**: merge the two result sets before reporting — findings
+**Checkpoint ①**: if Phase 1 ran sharded or Phase 2 ran lens-split,
+first merge each phase's reports into one (baseline tables and
+cross-shard dedup — see "Dynamic fan-out"). Then merge the two result
+sets before reporting — findings
 pointing at the same file:line or the same mechanism (e.g. Analyze's God
 Class and Architecture's God Object) are combined into one, keeping the
-more concrete evidence. Report the merged results to the user, agree on
-scope and priorities, then move to Phase 3.
+more concrete evidence.
+
+Before reporting, **sample-verify each report**: open 2–3 of its cited
+file:line claims and compare against the code. If even one is wrong,
+distrust that agent's remaining claims — widen the check or re-dispatch
+that scope. Carry every report's "Unverified/assumed items" block into
+the merged report as-is. Report the merged results to the user, agree
+on scope and priorities with those gaps in view, then move to Phase 3.
 
 ---
 
@@ -183,6 +272,14 @@ intermediate commit proposals) can only live in the main conversation —
 the only place that can talk to the user. Delegate each Step to a
 per-Step subagent given `agents/execute.md`, or perform it inline;
 between Steps, check the gate conditions.
+
+When delegating a Step, paste the **full Step text** from the plan
+(technique, target, change, affected files, rollback) into the spawn
+prompt — the subagent cannot see the plan or this conversation, and a
+pointer forces it to re-derive the plan, badly. After the subagent
+reports green, verify before the checkpoint commit: `git diff --stat`
+must match the Step's affected-files list, and the test command must
+have actually run. A green report without that check is a claim.
 
 Core principle — **small, safe, reversible**
 (작고, 안전하고, 되돌릴 수 있게):

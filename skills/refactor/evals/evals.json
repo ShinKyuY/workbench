@@ -42,6 +42,20 @@
         "ROUTES 라우팅 테이블이 15개 엔드포인트를 그대로 유지한다",
         "최종 보고에 중복 제거 전후 비교가 포함된다"
       ]
+    },
+    {
+      "id": 4,
+      "eval_name": "large-multi-module-fanout",
+      "prompt": "webshop/ 프로젝트가 모듈은 나뉘어 있는데 경계가 엉망인 것 같아. 비슷한 코드가 여기저기 있고 서비스 클래스도 너무 비대해. 전체 구조 점검하고 리팩토링 계획까지 세워줘. 실행은 계획 보고 나서 내가 결정할게.",
+      "expected_output": "Large 라우팅 → Phase 1을 모듈 경계(api/services/utils/root) 기준 2–5개 scoped shard로 분할, 테스트 스위트는 한 곳에서만 실행, Architecture는 전체 뷰 유지(단일 또는 관점별 lens 에이전트 최대 5개, scope 분할 금지). 병합 보고에서 크로스 모듈 중복(api/users·orders의 utils.validators 재구현, api/orders와 services.quote의 가격 로직 중복), 레이어 위반(api/orders→db 직접 접근), StoreService God Class 탐지. Phase 3 계획 보고 후 실행 없이 정지.",
+      "files": ["evals/files/multi-module/webshop/"],
+      "expectations": [
+        "Phase 1 분석이 모듈 경계 기준 2개 이상 5개 이하의 scoped 단위로 분할 수행되었다 (서브에이전트 불가 환경이면 동일 분할의 인라인 단계)",
+        "테스트 스위트(8개) 실행이 한 곳(한 shard 또는 오케스트레이터)에서만 수행되었다",
+        "api/users.py와 api/orders.py가 utils.validators를 재구현한 크로스 모듈 중복이 병합 보고에 포함된다",
+        "api/orders.py의 db 직접 접근(레이어 위반)과 services/store.py StoreService의 God Class 징후가 탐지된다",
+        "병합된 baseline 지표 테이블이 전체 대상(파일 수/총 줄 수)을 포괄하고, Phase 3 계획 보고 후 실행 없이 정지한다"
+      ]
     }
   ]
 }
