@@ -1,213 +1,236 @@
 ---
 name: refactor
 description: >
-    코드 리팩토링 및 아키텍처 리뷰 스킬. 코드 결함 징후 분석,
-    아키텍처 점검(SOLID/결합도/응집도), 리팩토링 계획 수립,
-    안전한 단계별 실행, 검증까지 subagent 파이프라인으로 수행한다.
-    사용자가 리팩토링, 코드 정리, 코드 개선, 코드 결함 제거,
-    중복 제거, 함수 분리, 클래스 분리, 복잡도 줄이기,
-    아키텍처 리뷰, 구조 점검, SOLID 위반, 의존성 정리,
-    레이어 분리, 결합도 낮추기, 응집도 높이기,
-    "이 코드 좀 깔끔하게", "코드 지저분한데", "구조 개선해줘",
-    "아키텍처 봐줘", "의존성이 꼬여있어", "너무 긴 함수",
-    "God Class", "DRY 위반" 등을 언급하면
-    반드시 이 스킬을 사용할 것. 단순 버그 수정이나 새 기능 추가가
-    아닌, 기존 코드의 구조적 품질 개선이 목적일 때 트리거한다.
+    Code refactoring and architecture review skill. Runs a subagent
+    pipeline covering defect-sign analysis, architecture checks
+    (SOLID/coupling/cohesion), refactoring planning, safe step-by-step
+    execution, and verification. Use this skill whenever the user asks
+    for refactoring, code cleanup, code improvement, removing code
+    smells, deduplication, extracting functions/classes, reducing
+    complexity, architecture review, structure checks, SOLID violations,
+    dependency cleanup, layer separation, lowering coupling, raising
+    cohesion, "God Class", "DRY violation", or says things like
+    "clean this code up", "this code is messy", "improve the structure",
+    "review the architecture", "tangled dependencies", "this function is
+    too long" — including Korean phrasings such as "리팩토링",
+    "코드 정리", "구조 개선해줘", "아키텍처 봐줘", "이 코드 좀 깔끔하게",
+    "코드 지저분한데", "의존성이 꼬여있어", "너무 긴 함수". Trigger when
+    the goal is structural quality improvement of existing code, not bug
+    fixes or new features.
 ---
 
-# Refactor — 코드 리팩토링 스킬
+# Refactor — Code Refactoring Skill (코드 리팩토링 스킬)
 
-리팩토링은 **외부 동작을 보존하면서 내부 구조를 개선하는 것**이다.
-이 스킬의 모든 단계는 그 한 문장을 지키기 위해 존재한다:
-분석으로 현재 상태를 객관화하고, 계획으로 변경을 작은 단위로 쪼개고,
-검증으로 동작 보존을 증명한다. 어떤 단계를 생략하더라도
-"동작 보존의 증거"만큼은 생략하지 않는다.
+Refactoring means **improving internal structure while preserving external
+behavior** (외부 동작을 보존하면서 내부 구조를 개선).
+Every phase of this skill exists to honor that one sentence:
+analysis makes the current state objective, planning slices the change into
+small units, and verification proves behavior was preserved. Whatever else
+gets skipped, never skip the **evidence of behavior preservation**.
 
-## 첫 판단: 규모 라우팅
+## First decision: size routing (규모 라우팅)
 
-파이프라인을 전부 돌릴지 **먼저** 결정한다. 과한 프로세스는 그 자체가
-비용이고, 부족한 프로세스는 동작 변경 사고로 이어진다.
+Decide **first** whether to run the full pipeline. Too much process is a
+cost in itself; too little leads to behavior-change accidents.
 
-| 규모 | 예 | 접근 |
-|------|----|------|
-| **소규모** | 함수 1~2개, 단일 파일 일부 | Phase 1을 인라인으로 빠르게 수행(Phase 2 생략). 분석 요약 + 3~5줄 계획을 한 번에 보고하고 확인 후 실행→검증 |
-| **중규모** | 파일 1~3개 | 전체 파이프라인. subagent 활용 |
-| **대규모** | 모듈/패키지 단위 | 전체 파이프라인 + 아키텍처 리뷰 필수. 단계별 사용자 합의, 여러 PR로 분할 제안 |
+| Size | Example | Approach |
+|------|---------|----------|
+| **Small** (소규모) | 1–2 functions, part of one file | Run Phase 1 inline, quickly (skip Phase 2). Report the analysis summary + a 3–5 line plan at once, then execute → verify after confirmation |
+| **Medium** (중규모) | 1–3 files | Full pipeline, with subagents |
+| **Large** (대규모) | Module/package level | Full pipeline + architecture review required. Per-phase user agreement, propose splitting into multiple PRs |
 
-리뷰만 원하는 요청("아키텍처 봐줘", "구조 점검해줘")이면 Phase 1+2까지
-수행하고 보고로 끝낸다. 실행은 사용자가 원할 때만 진행한다.
+If the request is review-only ("review the architecture", "구조 점검해줘"),
+run Phase 1+2 and stop at the report. Execute only when the user asks.
 
-## 파이프라인 개요
+## Pipeline overview (파이프라인 개요)
 
 ```
 [1. Analyze] → [2. Architecture] → [3. Plan] → [4. Execute] → [5. Verify]
-  결함 징후       SOLID/결합도      리팩토링      단계별        테스트 +
-  탐지 & 측정    응집도/레이어      전략 수립     변환 적용     품질 비교
+  defect signs    SOLID/coupling   refactoring   stepwise      tests +
+  detect+measure  cohesion/layers  strategy      transforms    quality diff
 ```
 
-- Phase 1과 2는 서로 독립이므로 **병렬** spawn — 두 Agent 호출을
-  **한 메시지에 함께** 보내야 실제로 동시에 실행된다
-- Phase 3은 1+2 결과에 의존 → 순차
-- Phase 4의 각 Step은 이전 Step에 의존 → 순차
-- Phase 5의 테스트 실행과 품질 측정은 병렬 가능
+- Phases 1 and 2 are independent → spawn **in parallel**; send both Agent
+  calls **in a single message**, or they will not actually run concurrently
+- Phase 3 depends on the 1+2 results → sequential
+- Each Step in Phase 4 depends on the previous Step → sequential
+- Phase 5's test run and quality measurement can run in parallel
 
-## Subagent 실행 프로토콜
+## Subagent execution protocol (subagent 실행 프로토콜)
 
-각 Phase의 상세 절차는 `agents/*.md`에 있다. subagent에게 위임할 때
-다음을 지키지 않으면 subagent가 엉뚱한 곳을 분석하거나 결과를 비교할 수
-없게 된다:
+Detailed procedures for each phase live in `agents/*.md`. When delegating
+to a subagent, ignoring the rules below makes the subagent analyze the
+wrong target or produce results that cannot be compared:
 
-- **subagent는 이 대화의 컨텍스트를 모른다.** spawn 프롬프트에 반드시
-  포함: (1) 읽을 agent 파일의 절대 경로, (2) 대상 파일/디렉토리 경로,
-  (3) 프로젝트 테스트 명령어, (4) 사용자가 언급한 제약·우선순위,
-  (5) 기대 출력 형식(각 agent 파일의 "출력 형식" 섹션).
-- **subagent는 사용자와 대화할 수 없다.** 사용자 확인이 필요한 판단을
-  subagent 안에서 처리하게 두지 않는다 — subagent는 조건만 보고하고,
-  메인 대화가 사용자에게 묻는다. 확인 포인트 ①~③과 Phase 4의
-  승인 게이트가 모두 여기에 해당한다.
-- spawn 시 `refactor-analyze`, `refactor-plan`처럼 역할이 드러나는
-  이름을 붙인다. 특히 Plan은 내장 Plan agent type과 이름이 겹치므로
-  라벨 없이 spawn하면 혼동될 수 있다.
-- **subagent를 쓸 수 없는 환경**(중첩 agent 불가 등)이면 같은 agent
-  파일을 직접 읽고 인라인으로 순차 수행한다. 파이프라인의 가치는
-  병렬성이 아니라 단계 분리에 있으므로, 인라인으로도 단계와 산출물은
-  동일하게 유지한다.
+- **Subagents know nothing about this conversation.** The spawn prompt
+  must include: (1) the absolute path of the agent file to read,
+  (2) target file/directory paths, (3) the project's test command,
+  (4) constraints and priorities the user mentioned, (5) the expected
+  output format (the "Output format" section of each agent file).
+- **Subagents cannot talk to the user.** Never let a judgment that needs
+  user confirmation happen inside a subagent — the subagent only reports
+  the condition, and the main conversation asks the user. Checkpoints ①–③
+  and the Phase 4 approval gates all fall under this rule.
+- Name spawned agents so the role is visible: `refactor-analyze`,
+  `refactor-plan`, and so on. Plan in particular collides with the
+  built-in Plan agent type, so spawning it unlabeled invites confusion.
+- **If subagents are unavailable** (no nested agents, etc.), read the same
+  agent file directly and perform the phases inline, sequentially. The
+  pipeline's value is phase separation, not parallelism — keep the phases
+  and their artifacts identical even when inline.
 
-## 안전 전제: 시작 전 점검
+## Safety precondition: pre-flight checks (시작 전 점검)
 
-리팩토링은 "되돌릴 수 있음"이 전제일 때만 안전하다. Phase 4 시작 전에
-반드시 확인한다 (상세는 `agents/execute.md`):
+Refactoring is only safe while "we can roll back" holds. Verify before
+starting Phase 4 (details in `agents/execute.md`):
 
-1. **git 작업 트리 상태** — uncommitted 변경이 있으면 사용자의 작업과
-   리팩토링 변경이 섞여 롤백이 불가능해진다. 커밋/stash를 먼저 제안한다.
-2. **git 저장소가 아니면** — 대상 파일의 백업 사본을 만들고 사용자에게
-   알린 뒤 진행한다.
-3. **테스트 부재 시** — characterization test 작성을 먼저 제안한다.
-   사용자가 테스트 없이 진행을 원하면 각 Step을 더 작게 쪼개고
-   수동 검증 포인트를 추가한다.
+1. **Git working tree state** — uncommitted changes mix the user's work
+   with refactoring changes, making rollback impossible. Propose
+   commit/stash first.
+2. **Not a git repository** — create backup copies of the target files
+   and tell the user before proceeding.
+3. **No tests** — propose writing characterization tests first. If the
+   user wants to proceed without tests, slice each Step smaller and add
+   manual verification points.
 
 ---
 
 ## Phase 1: Analyze (분석)
 
-> 목표: 대상의 현재 상태를 객관적으로 파악하고, Phase 5 비교에 쓸
-> **baseline 지표를 기록**한다.
+> Goal: objectively understand the target's current state and record the
+> **baseline metrics** used for the Phase 5 comparison.
 
-**Analyze subagent** (`agents/analyze.md`)를 spawn한다. 수행 내용:
+Spawn the **Analyze subagent** (`agents/analyze.md`). It covers:
 
-- **결함 징후 탐지** — 크기(Long Method/Large Class), 구조(God Class,
-  Feature Envy), 중복·파생 가능한 상태, 기존 유틸 재구현, 깊은 중첩,
-  결합도(Shotgun Surgery 등), 네이밍.
-  수치 임계값(30줄, 300줄, 파라미터 4개 등)은 절대 규칙이 아니라
-  휴리스틱이다 — 언어와 프로젝트 관례에 맞게 판단한다.
-- **효율 관찰 (보고 전용)** — 중복 계산·반복 I/O·핫패스 블로킹 등은
-  수정 시 관찰 가능한 동작이 바뀔 수 있어 Step으로 만들지 않고,
-  최종 보고의 권장사항으로만 전달한다.
-- **의존성 맵핑** — import/호출 관계, 변경 영향 범위(blast radius)
-- **테스트 상태 확인** — 존재 여부, 실행하여 현재 green 확인.
-  테스트가 없으면 반드시 사용자에게 알린다.
-- **baseline 지표 기록** — 함수 길이, 중첩 깊이, 파라미터 수, 중복 건수
-  등. Phase 5에서 이 표와 비교하므로 여기서 수치를 남기지 않으면
-  "개선됐다"는 주장을 증명할 수 없다.
+- **Defect sign detection** — size (Long Method/Large Class), structure
+  (God Class, Feature Envy), duplication & derivable state,
+  re-implementation of existing utilities, deep nesting, coupling
+  (Shotgun Surgery, etc.), naming. Numeric thresholds (30 lines,
+  300 lines, 4 parameters, ...) are heuristics, not absolute rules —
+  judge by the language and project conventions.
+- **Efficiency observations (report-only)** — repeated computation,
+  repeated I/O, blocking work on hot paths, etc. Fixing these can change
+  observable behavior, so they never become Steps; they are delivered
+  only as recommendations in the final report.
+- **Dependency mapping** — import/call relationships, blast radius
+- **Test status** — existence; run them and confirm currently green.
+  If there are no tests, always tell the user.
+- **Baseline metrics** — function length, nesting depth, parameter count,
+  duplication count, etc. Phase 5 compares against this table; without
+  numbers recorded here, "it improved" cannot be proven.
 
-보고 형식은 `agents/analyze.md`의 "출력 형식"을 따른다.
-소규모 인라인 처리 시에는 핵심 징후·테스트 상태·baseline 지표만
-간결히 요약한다.
+The report follows the "Output format" section of `agents/analyze.md`.
+For small-size inline handling, summarize only the key signs, test
+status, and baseline metrics.
 
 ---
 
 ## Phase 2: Architecture Review (아키텍처 리뷰)
 
-> 목표: 코드 레벨을 넘어 모듈/시스템 수준의 구조적 문제를 진단한다.
+> Goal: diagnose structural problems at the module/system level, above
+> the code level.
 
-**Architecture subagent** (`agents/architecture.md`)를 spawn한다.
-Phase 1과 **병렬 실행**한다. 수행 내용:
+Spawn the **Architecture subagent** (`agents/architecture.md`),
+**in parallel** with Phase 1. It covers:
 
-- SOLID 원칙 점검 (SRP/OCP/LSP/ISP/DIP)
-- 결합도·응집도 분석, 순환 의존성 확인
-- 아키텍처 안티패턴 탐지 (Big Ball of Mud, God Object 등)
-- 레이어 분리 점검 (presentation→DB 직접 접근 등)
+- SOLID principles check (SRP/OCP/LSP/ISP/DIP)
+- Coupling & cohesion analysis, circular dependency check
+- Architecture anti-pattern detection (Big Ball of Mud, God Object, ...)
+- Layer separation check (presentation→DB direct access, ...)
 
-보고 형식은 `agents/architecture.md`의 "출력 형식"을 따른다.
+The report follows the "Output format" section of
+`agents/architecture.md`.
 
-**확인 포인트 ①**: 보고 전에 두 결과를 병합한다 — 같은 파일:라인이나
-같은 메커니즘을 가리키는 발견(예: Analyze의 God Class와 Architecture의
-God Object)은 하나로 합치고 더 구체적인 근거를 남긴다. 병합한 결과를
-사용자에게 보고하고, 범위와 우선순위를 합의한 뒤 Phase 3으로 넘어간다.
+**Checkpoint ①**: merge the two result sets before reporting — findings
+pointing at the same file:line or the same mechanism (e.g. Analyze's God
+Class and Architecture's God Object) are combined into one, keeping the
+more concrete evidence. Report the merged results to the user, agree on
+scope and priorities, then move to Phase 3.
 
 ---
 
 ## Phase 3: Plan (계획)
 
-> 목표: 어떤 리팩토링 기법을 어떤 순서로 적용할지 전략을 세운다.
+> Goal: decide which refactoring techniques to apply, in what order.
 
-**Plan subagent** (`agents/plan.md`)를 spawn한다. 수행 내용:
+Spawn the **Plan subagent** (`agents/plan.md`). It covers:
 
-- **기법 매칭** — 징후별 기법 선택. 전체 카탈로그는
-  `references/techniques.md`, 핵심 매칭 표는 `agents/plan.md` 참조.
-- **실행 순서 결정** — 안전한 것부터: Rename → Extract → Move →
-  Simplify → Generalize(필요할 때만, 마지막에).
-- **리스크 평가** — Step별 변경 파일 수, 공개 API 변경 여부,
-  롤백 방법.
+- **Technique matching** — pick techniques per defect sign. Full catalog
+  in `references/techniques.md`; core matching table in `agents/plan.md`.
+- **Execution order** — safest first: Rename → Extract → Move →
+  Simplify → Generalize (only when needed, last).
+- **Risk assessment** — files changed per Step, public API changes,
+  rollback method.
 
-각 Step은 **독립적으로 커밋 가능한 단위**여야 한다. 한 Step이 실패해도
-이전 Step까지는 유효해야 단계별 롤백이 성립한다.
+Each Step must be an **independently committable unit**. If one Step
+fails, the previous Steps must remain valid — that is what makes
+per-step rollback work.
 
-**확인 포인트 ②**: 계획과 리스크를 사용자에게 보고하고 확인받는다.
-소규모에서는 확인 포인트 ①과 ②를 하나로 합쳐도 된다. 단,
-**공개 API 변경이 포함되면 규모와 무관하게 반드시 명시적 승인**을 받는다.
+**Checkpoint ②**: report the plan and risks to the user and get
+confirmation. For small sizes, checkpoints ① and ② may be combined.
+However, **if a public API change is included, explicit approval is
+mandatory regardless of size**.
 
 ---
 
 ## Phase 4: Execute (실행)
 
-> 목표: 계획된 리팩토링을 한 Step씩 안전하게 적용한다.
+> Goal: apply the planned refactoring safely, one Step at a time.
 
-실행은 **메인 대화가 Step 단위로 오케스트레이션**한다. 승인 게이트
-(공개 API 변경, 한 Step 5개 이상 파일 변경, 중간 커밋 제안)는 사용자와
-대화할 수 있는 메인 대화에만 둘 수 있기 때문이다. 각 Step은
-`agents/execute.md`를 전달한 Step별 subagent에 위임하거나 인라인으로
-수행하고, Step 사이에서 게이트 조건을 점검한다.
+The **main conversation orchestrates execution Step by Step**. The
+approval gates (public API change, 5+ files changed in one Step,
+intermediate commit proposals) can only live in the main conversation —
+the only place that can talk to the user. Delegate each Step to a
+per-Step subagent given `agents/execute.md`, or perform it inline;
+between Steps, check the gate conditions.
 
-핵심 원칙 — **작고, 안전하고, 되돌릴 수 있게**:
+Core principle — **small, safe, reversible**
+(작고, 안전하고, 되돌릴 수 있게):
 
-1. **변환 적용** — 한 Step에 하나의 리팩토링만. 리팩토링과 기능 변경을
-   절대 섞지 않는다. 섞이는 순간 "테스트 실패 = 동작 변경"이라는
-   판정 기준이 무너진다.
-2. **참조 업데이트** — 이름/경로/시그니처 변경 시 모든 참조 확인
-3. **테스트 실행** — green이면 다음 Step, red면 즉시 롤백 후
-   더 작은 단위로 재시도
-4. **체크포인트** — Step 성공 시 중간 커밋을 제안한다
+1. **Apply the transform** — one refactoring per Step. Never mix
+   refactoring with functional changes; the moment they mix, the
+   criterion "test failure = behavior change" collapses.
+2. **Update references** — on rename/move/signature change, check every
+   reference
+3. **Run tests** — green → next Step; red → roll back immediately and
+   retry in smaller units
+4. **Checkpoint** — propose an intermediate commit after each successful
+   Step
 
-기법별 실행 가이드와 안전장치는 `agents/execute.md` 참조.
+Per-technique execution guides and guardrails: see `agents/execute.md`.
 
 ---
 
 ## Phase 5: Verify (검증)
 
-> 목표: 동작을 보존하면서 품질이 개선됐는지 **증거로** 확인한다.
+> Goal: confirm with **evidence** that quality improved while behavior
+> was preserved.
 
-**Verify subagent** (`agents/verify.md`)를 spawn한다. 수행 내용:
+Spawn the **Verify subagent** (`agents/verify.md`). It covers:
 
-- **기능 보존 확인** — 전체 테스트 스위트 실행, 리팩토링 전후 결과
-  비교. 새로 실패한 테스트가 있다면 그것은 리팩토링이 아니라
-  동작 변경이다 → 원인 파악 후 수정 또는 롤백.
-- **품질 지표 비교** — Phase 1의 baseline 지표 표와 After를 나란히 비교
-- **변경 범위 검증** — 계획에 없는 파일이 변경되지 않았는지 확인
+- **Behavior preservation** — run the full test suite, compare results
+  before/after the refactoring. Any newly failing test is not
+  refactoring but a behavior change → find the cause, then fix or roll
+  back.
+- **Quality metrics comparison** — Phase 1's baseline table side by side
+  with After
+- **Change scope validation** — confirm no files outside the plan were
+  changed
 
-**확인 포인트 ③**: 최종 보고서(변경 요약, Before/After 표, 테스트 결과,
-남은 할 일)를 사용자에게 보고한다. 형식은 `agents/verify.md` 참조.
+**Checkpoint ③**: report the final summary (change summary, Before/After
+table, test results, remaining work) to the user. Format: see
+`agents/verify.md`.
 
 ---
 
-## 사용자 확인 포인트 요약
+## User checkpoint summary (사용자 확인 포인트 요약)
 
-| 포인트 | 시점 | 생략 가능? |
-|--------|------|-----------|
-| ① 분석+리뷰 결과 | Phase 2 후 | 소규모면 ②와 통합 가능 |
-| ② 실행 계획 | Phase 3 후 | 공개 API 변경 시 절대 불가 |
-| ③ 최종 결과 | Phase 5 후 | 불가 — 항상 보고 |
+| Checkpoint | When | Skippable? |
+|------------|------|------------|
+| ① Analysis + review results | After Phase 2 | May combine with ② for small sizes |
+| ② Execution plan | After Phase 3 | Never when a public API changes |
+| ③ Final results | After Phase 5 | No — always report |
 
-확인 포인트가 존재하는 이유: 리팩토링의 가장 흔한 사고는 "조용히
-동작을 바꾸는 것"이고, 두 번째는 "사용자가 원하지 않은 범위까지
-건드리는 것"이다. 확인은 이 둘을 막는 가장 싼 보험이다.
+Why checkpoints exist: the most common refactoring accident is "silently
+changing behavior"; the second is "touching scope the user didn't want".
+Confirmation is the cheapest insurance against both.
