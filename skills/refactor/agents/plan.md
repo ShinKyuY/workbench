@@ -28,6 +28,12 @@ Analyze Agent의 출력:
 | Magic Numbers | Symbolic Constant | Config/Enum 추출 |
 | Data Class | Move 관련 로직 합류 | 필드 캡슐화 |
 | Middle Man | Remove Middle Man | Inline Class |
+| 기존 유틸 재구현 | 기존 헬퍼 호출로 대체 | Substitute Algorithm |
+| 특수 케이스 누적 | 기반 메커니즘 일반화 | Replace Conditional with Polymorphism |
+
+Analyze의 효율 관찰 사항(보고 전용)은 Step으로 만들지 않는다.
+동작 보존을 테스트로 증명하기 어려운 변경이므로, 최종 보고의
+권장사항으로만 넘긴다.
 
 ### 2. 실행 순서 결정
 
