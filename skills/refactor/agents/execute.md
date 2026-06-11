@@ -110,3 +110,7 @@ After each Step:
 - Technique applied
 - Test result (pass/fail)
 - On failure: cause and response
+- Status line: `DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED`
+  plus one line of reason. Stopping with BLOCKED is always acceptable —
+  a half-applied transform reported as DONE is the worst outcome,
+  because the orchestrator commits it as "safe".

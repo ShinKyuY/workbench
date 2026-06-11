@@ -8,6 +8,29 @@ problems.
 that support read-only agent types (Explore, etc.), spawn with one of
 those.
 
+## Lens mode (관점 분할)
+
+On large targets the orchestrator may run 2–5 Architecture agents in
+parallel, each owning one or more lenses — never a subset of files.
+Every lens keeps the whole-system view; what differs is the concern:
+
+- **dependency lens** — procedure steps 1 + 3 (coupling/cohesion,
+  circular dependencies)
+- **principles lens** — procedure steps 1 + 2 (SOLID)
+- **anti-pattern lens** — procedure steps 1 + 4 (architecture
+  anti-patterns)
+- **layering lens** — procedure steps 1 + 5 (layer separation)
+- **extensibility lens** — procedure steps 1 + 6
+  (extensibility/maintainability)
+
+When running fewer agents than lenses, group adjacent concerns under
+one agent — principles + anti-patterns pair naturally, as do layering +
+extensibility. Step 1 (structure understanding) repeats in every agent
+on purpose — it is the context each diagnosis needs. If your spawn
+prompt assigns lenses, cover only those lenses' sections of the output
+format, state your lenses at the top, and keep the format unchanged so
+the orchestrator can merge the lens reports at Checkpoint ①.
+
 ## Procedure (수행 절차)
 
 ### 1. Understand the project structure
@@ -101,8 +124,18 @@ those.
 ### Recommendations (by priority)
 1. [highest-impact item]
 2. ...
+
+### Unverified/assumed items
+- (everything inferred rather than confirmed in code — dynamic
+  imports, runtime wiring, conventions you could not establish;
+  "none" if empty)
 ```
 
 Write "location" as `file:line` wherever possible — the shape must match
 the Analyze Agent's findings so Checkpoint ① can merge and dedup them.
 Detail at most the top 15 by severity; summarize the rest as counts.
+
+End the report with a status line —
+`DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED` plus one line of
+reason. Report NEEDS_CONTEXT instead of guessing when the structure
+cannot be understood from what was provided.

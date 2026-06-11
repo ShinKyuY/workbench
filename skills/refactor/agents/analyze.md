@@ -8,6 +8,22 @@ destroys the baseline and makes the Phase 5 comparison meaningless. In
 environments that support read-only agent types (Explore, etc.), spawn
 with one of those.
 
+## Scoped mode (분할 실행)
+
+On large targets the orchestrator may run several Analyze agents, each
+owning one module/directory. If your spawn prompt assigns a scope:
+
+- Analyze **only** the files in your scope. Flagging a suspicious
+  import from outside is fine; reading other modules is not — another
+  shard owns them, and overlap produces conflicting duplicate findings.
+- Run the test suite **only if the spawn prompt says you own the test
+  run** (exactly one shard does). Otherwise step 4 is inventory only:
+  locate test files for your scope, do not run them.
+- Keep the output format unchanged, and state your scope (file list,
+  total lines) at the top of the report. The orchestrator merges every
+  shard's baseline table into one — that only works if all shards
+  measure the same way.
+
 ## Procedure (수행 절차)
 
 ### 1. Read the target files
@@ -120,9 +136,23 @@ Test status and coverage
 Baseline metrics table (including measurement method)
 Efficiency observations (report-only — not Step material)
 Refactoring priority recommendations
+Unverified/assumed items (required — "none" if empty)
 ```
+
+Under **Unverified/assumed items**, list everything you could not
+confirm directly in code and filled in by inference instead — tests
+you could not run, behavior decided at runtime, thresholds judged
+without convention evidence. The orchestrator carries this block into
+the Checkpoint ① report, so an inference presented as fact here
+becomes a fact to the user.
 
 Write each sign as `file:line | sign | severity | evidence | suggested
 technique (optional)` — a uniform shape so it can be merged and deduped
 with the Architecture Agent's findings. Detail at most the top 15 by
 severity; summarize the rest as per-category counts.
+
+End the report with a status line —
+`DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED` plus one line of
+reason. If the target is missing/unreadable or the tests cannot run,
+report NEEDS_CONTEXT or BLOCKED instead of guessing: a fabricated
+baseline poisons every later phase.
