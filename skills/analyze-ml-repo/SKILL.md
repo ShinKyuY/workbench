@@ -1,216 +1,311 @@
 ---
 name: analyze-ml-repo
-description: >
-    ML/AI 모델 코드 레포지토리의 구조 분석이 필요할 때 사용하는 스킬.
-    사용자가 ML 레포 분석, 모델 코드 이해, 학습 파이프라인 파악,
-    데이터 흐름 추적, 텐서 형상 확인, 코드베이스 구조화 문서화를
-    요청할 때 사용한다. "이 모델 어떻게 동작해?", "데이터가 어떻게
-    흘러가?", "텐서 형상 알려줘", "워크플로우 정리해줘", "코드 구조
-    분석해줘" 같은 요청에 반드시 트리거되어야 한다. '분석'이라는
-    단어가 없어도 모델 학습/추론 코드의 동작 설명이 필요한 상황이면
-    사용한다.
+description: >-
+    Structural analysis of ML/AI model code repositories. Use when the
+    user asks to analyze an ML repo, understand model code, map a
+    training pipeline, trace data flow, check tensor shapes, or
+    document the structure of an ML codebase. Must trigger on requests
+    like "how does this model work?", "how does the data flow?",
+    "what are the tensor shapes?", "summarize the workflow", "analyze
+    the code structure" — including Korean phrasings such as "이 모델
+    어떻게 동작해?", "데이터가 어떻게 흘러가?", "텐서 형상 알려줘",
+    "워크플로우 정리해줘", "코드 구조 분석해줘". Trigger even without
+    the word "analyze" whenever the behavior of model training or
+    inference code needs to be explained.
 ---
 
-# ML Repository Analyzer
+# ML Repository Analyzer (ML 레포 구조 분석)
 
-ML/AI 모델 레포지토리를 전문 subagent 팀으로 분석하여
-구조화된 문서를 생성하는 스킬이다.
+Analyzes an ML/AI model repository with a team of specialized
+subagents and produces a structured analysis document.
 
-## 핵심 원칙
+Write the final analysis document and the chat summary in the
+language of the conversation (Korean session → Korean document).
+Section structure, code identifiers, and tensor-shape notation stay
+the same regardless of language.
 
-1. **코드 우선, docs 보조**: 소스코드를 먼저 읽고,
-   docs/README는 보충용이다.
-2. **구체적 예시 필수**: 추상적 설명 대신 실제 데이터 예시,
-   텐서 형상, 코드 라인 참조를 포함한다.
-3. **필요한 subagent만 병렬 투입**: 요청 범위에 맞는
-   에이전트를 골라(Step 2) 동시에 투입한다.
-4. **오케스트레이터 역할**: 메인 에이전트는 subagent 결과를
-   종합하고, 빈 부분을 보충하고, 최종 문서를 조립한다.
-5. **산출물은 파일로**: 최종 문서는 markdown으로 저장하고
-   md2html 스킬로 HTML 변환까지 마친다. 채팅에는 요약만
-   제시한다.
+## Core principles (핵심 원칙)
+
+1. **Code first, docs second**: read the source code first;
+   docs/README are supplements.
+2. **Concrete examples required**: include real data examples,
+   tensor shapes, and code line references instead of abstract
+   descriptions.
+3. **Dispatch only the subagents needed**: pick the roles that match
+   the request scope, scale the instance count to the targets found
+   in the repo (Step 2), and dispatch them concurrently.
+4. **Orchestrator role**: the main agent synthesizes subagent
+   results, fills the gaps, and assembles the final document.
+5. **Deliverables as files**: save the final document as markdown and
+   convert it to HTML with the md2html skill. Present only a summary
+   in chat.
 
 ---
 
-## Step 1: 정찰 (직접 수행)
+## Step 1: Reconnaissance (정찰 — 직접 수행)
 
-subagent를 보내기 전에 먼저 레포의 뼈대를 파악한다.
-이 정보가 있어야 subagent에게 정확한 탐색 범위를 지시할 수
-있다.
+Before dispatching subagents, map the skeleton of the repo yourself.
+This information is what lets you give each subagent a precise
+search scope.
 
-직접 실행할 작업:
+Do directly:
 ```
-1. Glob으로 프로젝트 트리 파악:
-   - **/*.py (주요 Python 파일)
-   - **/config*.json, **/config*.yaml (설정 파일)
-   - **/*.md (문서)
+1. Map the project tree with Glob:
+   - **/*.py (main Python files)
+   - **/config*.json, **/config*.yaml (config files)
+   - **/*.md (docs)
 
-2. Grep으로 핵심 패턴 탐색:
-   - "class.*Dataset" -> 데이터셋 파일 위치
-   - "class.*Model\b|class.*Net\b|class.*Module" -> 모델 파일 위치
-   - "def forward" -> forward pass 위치
-   - "def train|class.*Trainer" -> 학습 루프 위치
+2. Search key patterns with Grep:
+   - "class.*Dataset" -> dataset file locations
+   - "class.*Model\b|class.*Net\b|class.*Module" -> model files
+   - "def forward" -> forward pass locations
+   - "def train|class.*Trainer" -> training loop locations
    - "nn\.Embedding|nn\.Conv|nn\.Linear|nn\.LSTM|nn\.Transformer"
-     -> 사용 중인 아키텍처 패턴 파악
-   - "__main__" -> entry point
+     -> architecture patterns in use
+   - "__main__" -> entry points
 
-3. Config 파일 읽기:
-   - 모델 핵심 수치 파악 (차원, 레이어 수, vocab 크기 등)
-   - 어떤 아키텍처 유형인지 판별
-     (CNN/RNN/Transformer/GAN/Diffusion/MLP/추천·랭킹 등)
+3. Read config files:
+   - Extract the model's key numbers (dims, layer counts,
+     vocab sizes, ...)
+   - Identify the architecture family
+     (CNN/RNN/Transformer/GAN/Diffusion/MLP/recsys-ranking, ...)
 
-4. 분석 범위 확정:
-   - 레포에 독립적인 모델 패밀리나 서브프로젝트가 여러 개면
-     (모노레포), 어느 부분을 분석할지 AskUserQuestion으로
-     사용자에게 확인한다. 전체 분석은 시간·토큰이 몇 배로
-     들기 때문에 범위를 먼저 좁히는 것이 낫다.
+4. Fix the analysis scope:
+   - If the repo contains multiple independent model families or
+     subprojects (monorepo), ask the user with AskUserQuestion which
+     part to analyze. A full analysis costs several times the
+     time/tokens, so narrowing the scope first is better.
+   - In an environment where the user cannot respond
+     (background/headless run), pick the part that the entry points
+     and the request context indicate is most central, and state the
+     choice and rationale at the top of the final document as an
+     explicit assumption.
 ```
 
-이 단계의 결과물: **subagent 투입 계획** — 어떤 파일을
-누가 분석할지 결정한다.
+Output of this step: the **target inventory** — the model families,
+dataset pipelines, training entry points, and inference paths in
+scope, each with its file list. Step 2 turns this into a dispatch
+plan.
 
 ---
 
-## Step 2: 투입할 subagent 선택
+## Step 2: Build the dispatch plan (동적 투입 계획)
 
-모든 분석이 필요하지 않을 수 있다. 사용자 요청에 따라
-투입할 subagent를 선택한 뒤 Step 3로 진행한다.
+Not every analysis is needed every time, and one agent per role is
+not always enough. Build the plan in two passes: pick the **roles**
+from the request, then set the **instance count** per role from the
+Step 1 target inventory.
 
-| 요청 유형 | 투입 agents |
-|-----------|-------------|
-| "전체 구조 분석해줘" | 5개 전체 |
-| "데이터 형상 알려줘" | structure-scout + data-pipeline |
-| "모델 어떻게 동작해" | structure-scout + model-architecture |
-| "학습 어떻게 해" | structure-scout + training-workflow |
-| "워크플로우 정리해줘" | structure-scout + data-pipeline + training-workflow + inference-analyst |
-| "이 파일 분석해줘" | 없음 — 직접 수행, subagent 불필요 |
+### 2-1. Pick roles from the request
 
-- Step 1 정찰은 어떤 경우에도 직접 수행한다.
-  structure-scout는 정찰과 별개로, 최종 문서의 구조/entry
-  point 섹션을 작성하는 에이전트다.
-- 사용자가 이전에 분석한 결과가 대화에 있으면, 해당 부분은
-  건너뛰고 새로운 부분만 분석한다.
+| Request type | Roles to dispatch |
+|--------------|--------------------|
+| "Analyze the whole structure" (전체 구조 분석) | all 5 |
+| "What are the data shapes?" (데이터 형상) | structure-scout + data-pipeline |
+| "How does the model work?" (모델 동작) | structure-scout + model-architecture |
+| "How is it trained?" (학습 방법) | structure-scout + training-workflow |
+| "Summarize the workflow" (워크플로우 정리) | structure-scout + data-pipeline + training-workflow + inference-analyst |
+| "Analyze this one file" (단일 파일) | none — do it directly, no subagents |
 
----
+- Always perform the Step 1 reconnaissance yourself, in every case.
+  structure-scout is separate from reconnaissance — it is the agent
+  that writes the structure/entry-point sections of the final
+  document.
+- If earlier analysis results already exist in the conversation,
+  skip those parts and analyze only what is new.
 
-## Step 3: 전문 Subagent 병렬 투입
+### 2-2. Scale instances to the target inventory
 
-Step 2에서 선택한 subagent를 **동시에** 투입한다.
-각 subagent에게는 Step 1에서 파악한 구체적 파일 경로를
-지정해준다.
+The unit of dispatch is **role × target**, not just role. One plan
+row = one agent with its own file list.
 
-에이전트 정의는 `agents/` 디렉토리에 있다.
-투입 전에 해당 에이전트 파일을 Read로 읽어서 프롬프트에
-포함하라.
+- Default: 1 instance per role, covering all of that role's targets.
+- Fan out when a role has **2+ independent targets** — independent
+  means analyzing one tells you nothing about the other (separate
+  model families, unrelated dataset pipelines, disjoint training
+  entry points). E.g. models `interformer` + `wukong` in scope →
+  2 model-architecture instances, each with its own files.
+- structure-scout fans out the same way for monorepo subprojects.
+- A fan-out of 1 everywhere is the normal case. Most repos need the
+  default 5 or fewer; fan out only when the inventory forces it.
 
-| # | 에이전트 | 파일 | subagent_type | 역할 |
-|---|---------|------|---------------|------|
-| 1 | structure-scout | `agents/structure-scout.md` | Explore (very thorough) | 프로젝트 구조, entry point, 실행 흐름 |
-| 2 | data-pipeline | `agents/data-pipeline.md` | general-purpose | 데이터 파이프라인, 형상 변환 |
-| 3 | model-architecture | `agents/model-architecture.md` | general-purpose | 모델 구조, forward pass, 핵심 블록 |
-| 4 | training-workflow | `agents/training-workflow.md` | general-purpose | 학습 루프, loss, optimizer |
-| 5 | inference-analyst | `agents/inference-analyst.md` | general-purpose | 추론, 출력 스키마, 서빙 |
+Agent budget (예산) — these are full readers, not cheap verifiers:
+- Default budget **5 agents** per analysis; exceed it only when
+  independent targets force it, and say why in the plan.
+- Hard cap **8 agents** — never exceed it. Past the cap, never drop
+  a target silently: either **group related targets** under one
+  instance (one agent covers two small models) and record the
+  grouping in the final document's assumptions, or — when the
+  overflow is large — go back to the user via AskUserQuestion to
+  narrow the scope.
 
-각 에이전트에게 전달할 프롬프트 구성:
-1. 에이전트 파일의 지침 내용
-2. Step 1에서 파악한 **구체적 파일 경로**
-3. Config에서 읽은 **핵심 수치** (해당 시)
-4. `references/diagram-rules.md`의 다이어그램/표 규칙
-   — **투입하는 모든 에이전트에게 전달한다.** 각 에이전트
-   지침이 D1~D6 규칙을 참조하므로, 빠뜨리면 규칙 없이
-   다이어그램을 그리게 된다.
-5. 보고서 형식 지시: 최종 문서에 그대로 편입할 markdown
-   섹션으로 작성하게 한다 (각 에이전트 파일의 출력 규칙
-   참고).
-
-**Fallback — Agent 디스패치 도구가 없는 환경** (중첩
-subagent, 일부 플랫폼): 병렬 투입 대신, Step 2에서 선택한
-에이전트 정의 파일과 `references/diagram-rules.md`를 읽고
-각 에이전트의 분석 절차·출력 규칙을 직접 순차 수행한다.
-선택 기준과 산출물 품질 기준은 동일하게 적용된다.
-
----
-
-## Step 4: 결과 종합 및 보충
-
-모든 subagent 결과가 돌아오면:
-
-1. **결과 검증**: 각 subagent의 결과를 빠르게 검토한다.
-   형상이 맞는지, 빠진 부분이 없는지 확인한다.
-2. **교차 참조**: 데이터 전문가의 "배치 출력"과
-   모델 분석가의 "forward 입력"이 일치하는지 확인한다.
-3. **빈 부분 보충**: subagent가 놓친 파일이나 세부사항은
-   직접 읽어서 보충한다.
-4. **비교 테이블**: 모델이 여러 개이면 핵심 비교 테이블을
-   작성한다.
+Worked example: request "analyze the whole structure"; recon found
+independent models `interformer`/`wukong`, one shared dataset
+pipeline, one trainer → plan: structure-scout ×1,
+model-architecture ×2, data-pipeline ×1, training-workflow ×1,
+inference-analyst ×1 = 6 agents — one over the default budget,
+justified by the two independent model families, within the hard
+cap.
 
 ---
 
-## Step 5: 최종 문서 조립 → HTML 변환
+## Step 3: Dispatch specialist subagents in parallel (병렬 투입)
 
-### 5-1. Markdown 문서 조립
+Dispatch the Step 2 plan **concurrently** — one agent per plan row.
+Give each agent the concrete file paths of its own row's target.
 
-subagent 결과를 아래 구조로 조립한다. 다이어그램은
-`references/diagram-rules.md` 규칙(Mermaid/markdown 표)을
-따르고, 각 섹션에 해당 소스 파일 경로를 마크다운 링크로
-첨부한다.
+Agent definitions live in the `agents/` directory. Read each agent
+file before dispatching and include its content in the prompt.
+
+| # | Agent | File | subagent_type | Role |
+|---|-------|------|---------------|------|
+| 1 | structure-scout | `agents/structure-scout.md` | Explore (very thorough) | project structure, entry points, execution flow |
+| 2 | data-pipeline | `agents/data-pipeline.md` | general-purpose | data pipeline, shape transitions |
+| 3 | model-architecture | `agents/model-architecture.md` | general-purpose | model structure, forward pass, core blocks |
+| 4 | training-workflow | `agents/training-workflow.md` | general-purpose | training loop, loss, optimizer |
+| 5 | inference-analyst | `agents/inference-analyst.md` | general-purpose | inference, output schema, serving |
+
+What goes into each agent's prompt:
+1. The instructions from the agent file
+2. The **concrete file paths of its target** (from the plan row) —
+   for fanned-out instances, also one line on what the *other*
+   instances cover, so the agent does not wander out of scope
+3. The **key numbers** read from configs (when applicable)
+4. The diagram/table rules from `references/diagram-rules.md`
+5. The report contract from `references/report-contract.md`
+   (report format, status header, unverified-items block,
+   self-review)
+
+Items 4 and 5 go to **every dispatched agent**. Omitting them gets
+you diagrams with no rules and reports that cannot be verified.
+
+Subagent execution protocol (실행 프로토콜):
+- **Subagents know nothing about this conversation.** Items 1–5
+  above must all be in the prompt. A delegation like "analyze the
+  repo" makes the subagent analyze the wrong target.
+- Parallel dispatch only works when all Agent calls are sent
+  **in a single message**.
+- Name spawned agents so the role is visible: `ml-structure-scout`,
+  `ml-data-pipeline`, and so on. Fanned-out instances carry their
+  target: `ml-model-arch-interformer`, `ml-model-arch-wukong`.
+- **Subagents cannot talk to the user.** Any judgment that needs
+  user confirmation is only *reported* by the subagent; the main
+  conversation asks the user.
+
+**Optional — Workflow tool** (dynamic workflows): when the Workflow
+tool is available and the plan is large (≥5 rows), you may encode
+Step 3 as a workflow script — one `agent()` call per plan row inside
+`parallel()`, each prompt assembled exactly as items 1–5 above. The
+report contract and Step 4 verification stay unchanged. Plain
+parallel Agent calls are the default and fully sufficient; do not
+require the Workflow tool.
+
+**Fallback — environments without an Agent dispatch tool** (nested
+subagents, some platforms): instead of parallel dispatch, read the
+agent definition files chosen in Step 2 plus
+`references/diagram-rules.md` and `references/report-contract.md`,
+and perform each agent's procedure and output rules yourself,
+sequentially. The selection criteria and the quality bar
+(file:line evidence, unverified-items tracking, Step 4 verification)
+apply unchanged.
+
+---
+
+## Step 4: Synthesize and verify (결과 종합·검증)
+
+When all subagent results are back:
+
+1. **Check status first**: look at each report's `status` and its
+   "unverified/assumed items" block.
+   - PARTIAL → read the unverified spots yourself and fill them in.
+   - BLOCKED → fix the cause (wrong paths, missing context) and
+     re-dispatch. Never retry with the same prompt unchanged.
+2. **Sample-verify — do not trust the report**: from each report,
+   pick 2–3 key shape/number claims and open the cited file:line to
+   compare. If even one is wrong, distrust the rest of that agent's
+   claims and widen the verification.
+3. **Cross-check boundaries**: confirm that the seams between agents
+   agree. On mismatch, open the code yourself, decide which side is
+   right, and fix it.
+
+   | Boundary | What to check |
+   |----------|---------------|
+   | data-pipeline batch output ↔ model forward input | keys, shapes, dtypes |
+   | model forward output ↔ loss input | shapes |
+   | training checkpoint structure ↔ inference load code | saved/loaded keys |
+
+4. **Merge fanned-out instances**: when a role ran as multiple
+   instances (one per model/dataset), merge them into that role's
+   single document section — write shared mechanics once, keep
+   per-target differences, and add the comparison table across
+   targets (required with 2+ models).
+
+---
+
+## Step 5: Assemble the final document → HTML (문서 조립·변환)
+
+### 5-1. Assemble the markdown document
+
+Assemble the subagent results into the structure below. Diagrams
+follow the rules in `references/diagram-rules.md` (Mermaid/markdown
+tables), and every section links the relevant source file paths.
+Translate the section titles into the conversation language; the
+structure itself stays fixed.
 
 ```markdown
-# [프로젝트명] 분석
+# [Project] Analysis
 
-## 전체 워크플로우
-(Mermaid 다이어그램: 데이터 -> 전처리 -> 모델 -> 출력)
+## End-to-end workflow
+(Mermaid diagram: data -> preprocessing -> model -> output)
 
-## 1. 데이터 파이프라인
-### 1-1. 원시 데이터 스키마
-### 1-2. 전처리 파이프라인
-### 1-3. Dataset -> Collate 형상
-### 1-4. 구체적 데이터 예시 (원시 데이터 행, 배치 텐서)
+## 1. Data pipeline
+### 1-1. Raw data schema
+### 1-2. Preprocessing pipeline
+### 1-3. Dataset -> Collate shapes
+### 1-4. Concrete data examples (raw rows, batch tensors)
 
-## 2. 모델 아키텍처
-### 2-1. 설정값 요약 테이블
-### 2-2. Forward Pass 형상 추적 (라인별)
-### 2-3. 핵심 연산 블록 분석 (시각화 포함)
-### 2-4. Loss 함수 (수식 + 형상)
+## 2. Model architecture
+### 2-1. Config summary table
+### 2-2. Forward pass shape trace (line by line)
+### 2-3. Core block analysis (with visualizations)
+### 2-4. Loss function (formula + shapes)
 
-## 3. 학습 워크플로우
-### 3-1. 학습 설정 (optimizer, scheduler, precision)
-### 3-2. 분산 학습 구성
-### 3-3. 체크포인트 구조
-### 3-4. CLI 실행 예시
+## 3. Training workflow
+### 3-1. Training setup (optimizer, scheduler, precision)
+### 3-2. Distributed training setup
+### 3-3. Checkpoint structure
+### 3-4. CLI run examples
 
-## 4. 추론 & 출력
-### 4-1. 추론 입출력 형상
-### 4-2. 출력 스키마
-### 4-3. 서빙 최적화
+## 4. Inference & outputs
+### 4-1. Inference input/output shapes
+### 4-2. Output schema
+### 4-3. Serving optimizations
 
-## 5. 핵심 비교 테이블
-(모델이 여러 개이면)
+## 5. Key comparison table
+(when there are multiple models)
 ```
 
-### 5-2. 저장 및 HTML 변환
+### 5-2. Save and convert to HTML
 
-1. 조립한 문서를 `.md` 파일로 저장한다. 사용자가 경로를
-   지정하지 않았으면 분석 대상 레포의
-   `docs/analysis/<주제>.md`에 저장한다 (디렉토리가 없으면
-   생성).
-2. **md2html 스킬을 호출**하여 저장한 `.md`를 HTML로
-   변환한다. Mermaid 다이어그램·표·코드 블록이 네이티브로
-   렌더링된다. HTML 변환 로직을 직접 작성하지 않는다.
-3. 채팅에는 핵심 요약(전체 워크플로우 + 주요 발견 몇 가지)과
-   `.md`/`.html` 파일 경로만 제시한다. 전체 문서를 채팅에
-   다시 붙여넣지 않는다.
+1. Save the assembled document as a `.md` file. If the user did not
+   specify a path, save to `docs/analysis/<topic>.md` in the
+   analyzed repo (create the directory if missing).
+2. **Invoke the md2html skill** to convert the saved `.md` to HTML.
+   Mermaid diagrams, tables, and code blocks render natively. Do not
+   hand-write HTML conversion logic.
+3. In chat, present only the key summary (end-to-end workflow plus a
+   few main findings) and the `.md`/`.html` file paths. Do not paste
+   the full document back into the chat.
 
 ---
 
-## 분석 시 주의사항
+## Cautions during analysis (주의사항)
 
-1. **docs만 읽는 함정**: subagent에게 "소스 코드를 전체
-   읽어라"고 명시적으로 지시한다.
-2. **형상 추측 금지**: Embedding 테이블 크기, Linear in/out
-   차원은 코드에서 직접 확인한다.
-3. **예시 없는 설명 금지**: "x는 입력 텐서" 같은
-   설명은 불충분. `x: shape [32, 3, 224, 224]` 같은
-   구체적 예시가 필수.
-4. **교차 검증**: 데이터 출력 형상과 모델 입력 형상이
-   일치하는지 반드시 확인한다.
+1. **The docs-only trap**: explicitly instruct subagents to "read
+   the full source code". Report-quality rules — no shape guessing,
+   concrete examples required — are enforced directly on the agents
+   by `references/report-contract.md`.
+2. **Never trust reports blindly**: a subagent report enters the
+   document only after passing Step 4's sample verification and
+   boundary cross-checks. Shapes, numbers, citations — the code is
+   the ground truth for all of them.
