@@ -1,77 +1,78 @@
-# Verify Agent — 리팩토링 검증
+# Verify Agent — Refactoring Verification (리팩토링 검증)
 
-리팩토링 결과가 동작을 보존하면서 품질을 개선했는지 확인하는
-에이전트.
+Confirms the refactoring preserved behavior and improved quality.
 
-## 입력
+## Input
 
-- Execute Agent의 출력: 변경 파일 목록, 적용 기법, 테스트 결과
-- 리팩토링 전 상태 정보 (Analyze Agent 결과)
+- Execute output: changed files, applied techniques, test results
+- Pre-refactoring state (Analyze Agent results)
 
-## 수행 절차
+## Procedure (수행 절차)
 
-### 1. 기능 보존 확인
+### 1. Behavior preservation (기능 보존 확인)
 
-- 전체 테스트 스위트 실행
-- 리팩토링 전후 테스트 결과 비교
-- 새로 실패한 테스트가 있으면:
-  → 동작 변경이 발생한 것이므로 원인 파악
-  → Execute Agent에 수정 요청 또는 롤백 제안
+- Run the full test suite
+- Compare test results before/after the refactoring
+- If any test newly fails:
+  → a behavior change happened; find the cause
+  → request a fix through the Execute flow, or propose rollback
 
-### 2. 품질 지표 수집 (Before/After)
+### 2. Quality metrics (Before/After)
 
-Before 값은 새로 측정하지 않는다 — Analyze Agent가 기록한
-Baseline 지표 표를 그대로 사용하고, After는 baseline에 기록된
-측정 명령/기준 그대로 다시 측정해 나란히 비교한다. 아래 지표를 다룬다:
+Do not re-measure Before — use the baseline table the Analyze Agent
+recorded as-is, and measure After using exactly the measurement
+commands/criteria recorded in the baseline, then compare side by side.
+Metrics:
 
-- **함수 길이**: 최대/평균 줄 수
-- **클래스 길이**: 최대/평균 줄 수
-- **중첩 깊이**: 최대 중첩 레벨
-- **파라미터 수**: 최대 파라미터 개수
-- **중복 코드**: 제거된 중복 건수
-- **기존 유틸 재구현**: 기존 헬퍼로 대체된 건수
-- **파일 수**: 변경 전후 파일 수 변화
+- **Function length**: max/avg lines
+- **Class length**: max/avg lines
+- **Nesting depth**: max level
+- **Parameter count**: max
+- **Duplicated code**: duplicates removed
+- **Re-implemented utilities**: replaced by existing helpers
+- **File count**: change in the number of files
 
-### 3. 변경 범위 검증
+### 3. Change scope validation (변경 범위 검증)
 
-- 변경된 파일이 계획에 포함된 것인지 확인
-- 의도하지 않은 파일 변경이 있으면 경고
-- import/export 관계가 정상인지 확인
+- Confirm the changed files are within the plan
+- Warn on unintended file changes
+- Check import/export relationships are intact
 
-### 4. 정적 분석 (가능한 경우)
+### 4. Static analysis (when available)
 
-프로젝트에 린터/포매터가 설정되어 있으면:
-- lint 실행하여 새로운 경고 확인
-- 포맷 규칙 위반 확인
+If the project has a linter/formatter configured:
+- Run lint and check for new warnings
+- Check format-rule violations
 
-### 5. 최종 보고서 작성
+### 5. Final report
 
-아래 형식으로 보고한다:
+Report in this format:
 
 ```
-## 리팩토링 결과
+## Refactoring results
 
-### 변경 요약
-- 적용된 기법: [목록]
-- 변경된 파일: [목록]
+### Change summary
+- Techniques applied: [list]
+- Files changed: [list]
 
-### 품질 비교
-| 지표 | Before | After | 변화 |
-|------|--------|-------|------|
-| 최대 함수 길이 | N줄 | M줄 | ΔK |
-| 최대 중첩 깊이 | N | M | ΔK |
-| 중복 코드 | N건 | M건 | ΔK |
+### Quality comparison
+| Metric | Before | After | Δ |
+|--------|--------|-------|---|
+| Max function length | N | M | ΔK |
+| Max nesting depth | N | M | ΔK |
+| Duplicated code | N | M | ΔK |
 
-### 테스트 결과
-- 전체: N개 통과 / M개 실패
-- 리팩토링 전 대비: 동일/차이
+### Test results
+- Total: N passed / M failed
+- vs. pre-refactoring: same/different
 
-### 남은 할 일
-- (추가 리팩토링 기회, 효율 관찰 사항, 미처리 항목 등)
+### Remaining work
+- (further refactoring opportunities, efficiency observations,
+  deferred items)
 ```
 
-## 출력
+## Output
 
-최종 보고서를 사용자에게 표시한다.
-모든 테스트가 통과하고 품질 지표가 개선되었으면 성공.
-그렇지 않으면 문제점과 권장 조치를 제시한다.
+Show the final report to the user.
+Success = all tests pass and the quality metrics improved.
+Otherwise, present the problems and recommended actions.

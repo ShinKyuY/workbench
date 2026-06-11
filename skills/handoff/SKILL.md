@@ -1,185 +1,213 @@
 ---
 name: handoff
 description: >-
-  새로운 컨텍스트의 다음 에이전트가 작업을 cold start로 이어받을 수 있도록
-  HANDOFF.md를 생성/업데이트한다. "인수인계", "handoff", "다음 세션에서 이어서",
-  "작업 넘기기", "컨텍스트 저장", "여기까지 정리해줘", "다른 세션에서 이어할게",
-  "내일 이어서 하게 정리해놔", "/clear 전에 백업" 같은 작업 연속성 요청이 나오면
-  반드시 이 스킬을 사용한다. 장시간 작업 중단(퇴근 등), 컨텍스트 윈도우 한계 도달,
-  백그라운드 job을 돌려놓고 세션을 끝낼 때, 다른 에이전트(codex 등)로 위임할 때
-  트리거. 단, 기존 HANDOFF.md를 읽고 작업을 이어받기만 하는 경우나
-  커밋 메시지·README·회의록 작성 요청에는 사용하지 않는다.
+  Create/update HANDOFF.md so the next agent in a fresh context can take
+  over the work from a cold start. Use this skill whenever a
+  work-continuity request appears: "handoff", "hand over the work",
+  "continue in the next session", "save the context", "wrap this up for
+  later", "back up before /clear" — including Korean phrasings such as
+  "인수인계", "다음 세션에서 이어서", "작업 넘기기", "컨텍스트 저장",
+  "여기까지 정리해줘", "다른 세션에서 이어할게", "내일 이어서 하게
+  정리해놔". Triggers on long work interruptions (leaving for the day),
+  nearing the context-window limit, ending a session while background
+  jobs keep running, or delegating to another agent (codex, etc.).
+  Do NOT use it when merely reading an existing HANDOFF.md to take over
+  work, or for commit messages, READMEs, or meeting notes.
 ---
 
-# 인수인계 문서 생성
+# Handoff Document Generation (인수인계 문서 생성)
 
-다음 에이전트가 **30초 안에 동일한 지점에 도달**할 수 있도록 구조화된
-HANDOFF.md를 작성한다. 길게 쓰는 게 목적이 아니다. **검증된 상태, 재현 방법,
-다음 액션** 세 가지가 가장 중요하다.
+Write a structured HANDOFF.md so the next agent can **reach the same
+point within 30 seconds**. Length is not the goal. The three things that
+matter most: **verified state, repro steps, next actions**.
 
-## 작성 절차
+Write the handoff document in the language of the conversation
+(Korean session → Korean document); the template structure stays the
+same.
 
-### 1. 기존 문서 확인 및 컨텍스트 수집
+## Procedure (작성 절차)
 
-먼저 다음을 병렬로 수집한다:
-- 작업 디렉토리에 `HANDOFF.md` 또는 `HANDOFF-*.md`가 있는지 확인하고 있으면 Read.
-- `git status`, `git diff --stat`, `git log --oneline -5`로 객관적인 변경 현황 파악
-  (git repo가 아니면 생략).
+### 1. Check existing docs and gather context
 
-### 2. 세션 분석
+Collect the following in parallel first:
+- Check the working directory for `HANDOFF.md` or `HANDOFF-*.md`;
+  Read it if present.
+- `git status`, `git diff --stat`, `git log --oneline -5` for the
+  objective change state (skip if not a git repo).
 
-대화 이력에서 추출:
-- **실제로 검증된 것**과 **코드만 쓰고 안 돌려본 것**을 구분 — 가장 중요.
-- 사용자의 결정/피드백/거절한 방향.
-- 시도했다가 실패한 접근과 그 이유.
-- 세션이 끝나도 계속 도는 작업(제출한 job, 백그라운드 프로세스, 배포 등).
-  ID는 추측하지 말고 로그·제출 기록에서 실제 값을 확인한다 — 취소했다가
-  재제출한 경우 마지막 유효 ID인지 반드시 확인.
-- 다음 단계와 우선순위.
-- 사용자에게 물어야 할 미결정 사항.
+### 2. Analyze the session
 
-### 3. 문서 작성
+Extract from the conversation history:
+- Distinguish **what was actually verified** from **code written but
+  never run** — the most important split.
+- The user's decisions/feedback/rejected directions.
+- Approaches that were tried and failed, and why.
+- Work that keeps running after the session ends (submitted jobs,
+  background processes, deployments, ...). Do not guess IDs — confirm
+  the actual values from logs/submission records; when something was
+  cancelled and resubmitted, make sure it is the last valid ID.
+- Next steps and their priority.
+- Undecided items that need the user.
 
-아래 템플릿을 사용한다. 비어 있는 섹션은 `_(없음)_`으로 명시하고 통째로 삭제하지
-않는다 — 다음 에이전트가 "안 적힌 건지, 정말 없는 건지" 헷갈리지 않게.
+### 3. Write the document
 
-추가 규칙:
-- **재현 커맨드는 실행해 본 것만**: 적기 전에 실제로 돌려 출력을 확인한다.
-  못 돌려본 명령은 `(미확인)`을 붙인다 — 검증 안 된 커맨드는 다음 에이전트의
-  첫 30초를 디버깅으로 만든다.
-- **결정 로그의 기준**: 다음 에이전트의 행동을 바꿀 결정·실패만 적는다. 사소한
-  진행 메모는 검증 상태/변경된 파일로 충분하다 — 로그가 비대해지면 정작 중요한
-  결정이 묻힌다.
-- **시크릿 금지**: 토큰·비밀번호·자격증명 값은 평문으로 적지 않는다. 파일 경로나
-  ENV 변수 이름으로 가리킨다 — 핸드오프 문서는 오래 남고 어디로 복사될지 모른다.
+Use the template below. Mark empty sections `_(none)_` explicitly
+rather than deleting them — so the next agent never wonders "not
+recorded, or really none?".
+
+Additional rules:
+- **Repro commands: only ones actually run** — run them and check the
+  output before writing them down. Mark commands you could not run with
+  `(unverified)` — an unverified command turns the next agent's first
+  30 seconds into debugging.
+- **Decision-log bar**: record only decisions/failures that would change
+  the next agent's behavior. Minor progress notes are already covered by
+  the verification table and changed files — a bloated log buries the
+  decisions that matter.
+- **No secrets**: never write tokens/passwords/credentials in plain
+  text. Point to file paths or ENV variable names instead — handoff
+  documents live long and get copied to unknown places.
 
 ```markdown
-# Handoff — {작업 제목}
+# Handoff — {task title}
 
-**마지막 업데이트**: {YYYY-MM-DD HH:MM}
-**작업 디렉토리**: {absolute path}
-**브랜치**: {git branch, 해당 시}
+**Last updated**: {YYYY-MM-DD HH:MM}
+**Working directory**: {absolute path}
+**Branch**: {git branch, if applicable}
 
-## 다음 단계
+## Next steps
 
-1. {가장 먼저 할 일 — 구체적 동사로}
-2. {그 다음}
-3. {그 다음}
+1. {first thing to do — concrete verb}
+2. {then}
+3. {then}
 
-## 실행 중인 작업
+## Running work
 
-세션이 끝나도 계속 도는 작업. 없으면 `_(없음)_`.
+Work that keeps running after the session ends. If none, `_(none)_`.
 
-| 작업 | 식별자 | 상태 확인 | 완료 시 할 일 |
-|------|--------|----------|--------------|
-| {예: 학습 job} | {job ID / PID} | {예: mlx job status {ID}} | {예: 체크포인트로 평가 실행} |
+| Task | Identifier | Status check | When done |
+|------|------------|--------------|-----------|
+| {e.g. training job} | {job ID / PID} | {e.g. mlx job status {ID}} | {e.g. run eval on the checkpoint} |
 
-## 열린 질문
+## Open questions
 
-다음 에이전트가 단독으로 결정하면 안 되는 항목. 사용자에게 먼저 확인 필요.
+Items the next agent must not decide alone. Check with the user first.
 
-- {질문 1}
-- {질문 2}
+- {question 1}
+- {question 2}
 
-## 목표
+## Goal
 
-{최종적으로 달성하려는 것. 1-2문장.}
+{What we are ultimately trying to achieve. 1–2 sentences.}
 
-## 검증 상태
+## Verification status
 
-| 항목 | 상태 | 검증 방법 |
-|------|------|----------|
-| {기능/모듈} | ✅ 동작 확인 | {예: pytest tests/foo.py 통과} |
-| {기능/모듈} | ⚠️ 코드만 작성, 미실행 | - |
-| {기능/모듈} | ❌ 실패 중 | {에러 메시지 요약} |
+| Item | Status | How verified |
+|------|--------|--------------|
+| {feature/module} | ✅ verified working | {e.g. pytest tests/foo.py passes} |
+| {feature/module} | ⚠️ code written, not run | - |
+| {feature/module} | ❌ failing | {error summary} |
 
-## 재현 커맨드
+## Repro commands
 
-다음 에이전트가 cold start로 동일한 지점에 도달하는 데 필요한 명령.
+Commands the next agent needs to reach the same point from a cold start.
 
 ```bash
-# 환경 셋업
-{예: uv sync, npm install, ...}
+# Environment setup
+{e.g. uv sync, npm install, ...}
 
-# 현재까지의 결과 확인
-{예: pytest tests/, npm run build, ...}
+# Check the results so far
+{e.g. pytest tests/, npm run build, ...}
 
-# 실패 재현 (있으면)
-{예: python -m foo --debug}
+# Reproduce the failure (if any)
+{e.g. python -m foo --debug}
 ```
 
-## 변경된 파일
+## Changed files
 
-`git status` / `git diff --stat` 결과를 그대로 붙이는 것을 권장(수동 작성은 drift 발생).
+Pasting the `git status` / `git diff --stat` output verbatim is
+recommended (manual lists drift).
 
 ```
-{git status 출력 또는 변경 요약}
+{git status output or change summary}
 ```
 
-## 결정 · 시도 로그 (append-only)
+## Decision · attempt log (append-only)
 
-이력 보존 영역. 새 세션마다 위에 항목을 추가하고 이전 기록은 삭제하지 않는다.
+History preservation area. Each new session adds entries at the top;
+previous entries are never deleted.
 
-### {YYYY-MM-DD} — {짧은 제목}
-- **선택**: {채택한 접근}
-- **이유**: {왜 이걸 골랐는지}
-- **대안**: {고려했으나 버린 것 + 이유}
+### {YYYY-MM-DD} — {short title}
+- **Choice**: {adopted approach}
+- **Why**: {why this was picked}
+- **Alternatives**: {considered and dropped + why}
 
-### {YYYY-MM-DD} — {시도 실패 제목}
-- **시도**: {무엇을 해봤는지}
-- **결과**: {왜 실패했는지}
-- **교훈**: {다음 에이전트가 반복하지 않도록}
+### {YYYY-MM-DD} — {failed attempt title}
+- **Tried**: {what was attempted}
+- **Result**: {why it failed}
+- **Lesson**: {so the next agent does not repeat it}
 
-## 주의 사항
+## Cautions
 
-{함정, 환경 제약, 비가역 액션, 사용자 선호 등.}
+{Pitfalls, environment constraints, irreversible actions, user
+preferences, ...}
 
-## 참조 문서
+## References
 
-_(관련 설계 문서·계획·다른 핸드오프가 있을 때만 — 없으면 섹션 자체를 생략)_
+_(only when related design docs/plans/other handoffs exist — otherwise
+omit the section entirely)_
 
-- {경로 — 무엇인지 한 줄}
+- {path — one line on what it is}
 ```
 
-### 4. 저장 및 안내
+### 4. Save and announce
 
-- 기본 경로: 작업 디렉토리 루트의 `HANDOFF.md`.
-- 여러 독립 작업이 병행 중이면 `HANDOFF-<topic>.md`로 분리 (예: `HANDOFF-auth.md`).
-- git repo면 `.gitignore`에 추가할지 사용자에게 확인 — 기본은 **커밋하지 않음**(세션
-  상태이지 코드 자산이 아님). 명시적 요청 시에만 커밋 권장.
-- 저장 후 절대 경로를 사용자에게 안내한다.
+- Default path: `HANDOFF.md` at the working directory root.
+- With multiple independent workstreams in parallel, split into
+  `HANDOFF-<topic>.md` (e.g. `HANDOFF-auth.md`).
+- In a git repo, ask the user about adding it to `.gitignore` — the
+  default is **do not commit** (it is session state, not a code asset).
+  Recommend committing only on explicit request.
+- After saving, tell the user the absolute path.
 
-## 업데이트 로직
+## Update logic (업데이트 로직)
 
-기존 HANDOFF.md가 있을 때, 섹션별로 처리 방식이 다르다.
+When a HANDOFF.md already exists, sections are handled differently.
 
-**덮어쓰기 (현재 상태 반영)**
-- 다음 단계
-- 실행 중인 작업
-- 열린 질문
-- 목표
-- 검증 상태
-- 재현 커맨드
-- 변경된 파일
-- 주의 사항
-- 헤더의 마지막 업데이트 / 브랜치
+**Overwrite (reflect the current state)**
+- Next steps
+- Running work
+- Open questions
+- Goal
+- Verification status
+- Repro commands
+- Changed files
+- Cautions
+- The header's last-updated / branch
 
-**append-only (이력 누적)**
-- 결정 · 시도 로그 — 가장 최근 항목을 맨 위에 추가. 이전 항목은 절대 삭제·수정하지 않는다.
+**Append-only (history accumulates)**
+- Decision · attempt log — add the newest entry at the top. Never
+  delete or modify previous entries.
 
-**커스텀 섹션 (템플릿 외)**
-- 이전 세션이 추가한 섹션(측정 결과 표, 도메인 요약, 참조 자료 등)은 여전히
-  유효하면 그대로 유지하고 필요한 부분만 갱신한다.
-- 무효해진 경우에만 제거하고, 제거했다는 사실을 결정 로그에 한 줄 남긴다.
+**Custom sections (outside the template)**
+- Sections added by previous sessions (measurement tables, domain
+  summaries, reference material, ...) stay as-is while still valid;
+  update only what needs updating.
+- Remove only when invalidated, and leave a one-line note in the
+  decision log that it was removed.
 
-## 분량 가이드
+## Length guide (분량 가이드)
 
-핸드오프가 길어지면 다음 에이전트가 스킵한다. **전체 200줄 이내**를 목표로 한다.
-이를 넘으면 결정 로그를 별도 파일(`HANDOFF-history.md`)로 분리하는 것을 검토.
+A long handoff gets skipped by the next agent. Target **200 lines
+total**. Beyond that, consider splitting the decision log into a
+separate file (`HANDOFF-history.md`).
 
-## 트리거되었을 때 확인할 것
+## When triggered, confirm (트리거되었을 때 확인할 것)
 
-- 사용자가 "전체"인지 "특정 작업"인지 — 멀티 작업 중이면 어느 작업의 핸드오프인지 확인.
-- 이미 HANDOFF.md가 있고 무관한 작업이면 새 파일(`HANDOFF-<topic>.md`)로 생성.
-- 현재 진행이 어중간한 상태면, 검증 상태 표에 "미실행"으로 솔직하게 적는다 — 다음
-  에이전트가 깨진 기반 위에서 빌드하는 걸 막는 것이 핸드오프의 핵심 가치다.
+- Whether the user means "everything" or "one specific task" — with
+  multiple parallel tasks, confirm which one to hand off.
+- If a HANDOFF.md exists but covers unrelated work, create a new file
+  (`HANDOFF-<topic>.md`).
+- If progress is in an awkward half-done state, record it honestly as
+  "not run" in the verification table — preventing the next agent from
+  building on a broken foundation is the core value of a handoff.

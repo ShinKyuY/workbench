@@ -1,108 +1,112 @@
-# Execute Agent — 리팩토링 실행
+# Execute Agent — Refactoring Execution (리팩토링 실행)
 
-계획된 리팩토링 Step을 안전하게 적용하는 에이전트.
-메인 대화가 Step 단위로 오케스트레이션하며, 이 파일은 한 Step을
-수행하는 절차다 — Step별 subagent에 위임하든 인라인으로 수행하든
-단계와 산출물은 동일하다.
+Applies a planned refactoring Step safely. The main conversation
+orchestrates Step by Step; this file is the procedure for performing
+one Step — whether delegated to a per-Step subagent or performed
+inline, the stages and artifacts are the same.
 
-## 입력
+## Input
 
-Plan Agent의 출력 중 이번에 수행할 Step (기법, 대상, 변경 내용, 리스크)
+The Step to perform from the Plan Agent's output (technique, target,
+change, risk)
 
-## 핵심 원칙
+## Core principle
 
-**"작고, 안전하고, 되돌릴 수 있게"**
+**"Small, safe, reversible"** (작고, 안전하고, 되돌릴 수 있게)
 
-각 변환은:
-- 하나의 리팩토링 기법만 적용
-- 외부 동작을 변경하지 않음
-- 실패 시 즉시 되돌릴 수 있음
+Each transform:
+- Applies exactly one refactoring technique
+- Does not change external behavior
+- Can be undone immediately on failure
 
-## 시작 전 점검 (필수)
+## Pre-flight checks (required)
 
-롤백은 깨끗한 시작점이 있어야 성립한다. 첫 Step 전에 한 번,
-오케스트레이터(메인 대화)가 수행:
+Rollback requires a clean starting point. Once, before the first Step,
+the orchestrator (main conversation) performs:
 
-1. `git status` 확인 — uncommitted 변경이 있으면 사용자의 작업과
-   리팩토링 변경이 섞여 선택적 롤백이 불가능해진다.
-   커밋 또는 stash를 먼저 제안하고, 정리된 뒤에 시작한다.
-2. git 저장소가 아니면 대상 파일의 백업 사본을 만들고
-   사용자에게 백업 위치를 알린다.
-3. 현재 상태에서 테스트가 green인지 재확인한다.
-   시작점이 red면 어떤 실패가 리팩토링 탓인지 판별할 수 없다.
+1. Check `git status` — uncommitted changes mix the user's work with
+   refactoring changes, making selective rollback impossible.
+   Propose commit or stash first; start only after it's clean.
+2. If not a git repository, create backup copies of the target files
+   and tell the user where the backups are.
+3. Re-confirm the tests are green in the current state.
+   If the starting point is red, no failure can be attributed to the
+   refactoring.
 
-## 실행 프로토콜
+## Execution protocol
 
-### 각 Step 수행 시:
+### For each Step:
 
 ```
-1. 변환 적용
-   - 계획된 하나의 리팩토링만 수행
-   - 리팩토링과 기능 변경을 절대 섞지 않음
+1. Apply the transform
+   - Perform only the planned single refactoring
+   - Never mix refactoring with functional changes
 
-2. 참조 업데이트
-   - 이름 변경 시: 모든 참조를 빠짐없이 업데이트
-   - 파일 이동 시: import 경로를 모든 소비자에서 수정
-   - 시그니처 변경 시: 모든 호출부 확인
+2. Update references
+   - Renames: update every reference, no exceptions
+   - File moves: fix import paths in all consumers
+   - Signature changes: check every call site
 
-3. 테스트 실행
-   - 프로젝트의 테스트 명령어 실행
-   - Green → 다음 Step으로
-   - Red → 즉시 롤백, 원인 분석, 더 작은 단위로 재시도
+3. Run tests
+   - Run the project's test command
+   - Green → next Step
+   - Red → roll back immediately, analyze the cause, retry in
+     smaller units
 
-4. 결과 기록
-   - 변경한 파일 목록
-   - 적용한 기법
-   - 테스트 결과
+4. Record results
+   - Files changed
+   - Technique applied
+   - Test results
 ```
 
-## 기법별 실행 가이드
+## Per-technique guides
 
 ### Extract Method
-1. 추출할 코드 블록 식별
-2. 새 함수 생성, 코드 이동
-3. 원래 위치에서 새 함수 호출
-4. 필요한 파라미터와 리턴값 설정
-5. 변수 스코프 충돌 확인
+1. Identify the code block to extract
+2. Create the new function, move the code
+3. Call the new function from the original site
+4. Set the needed parameters and return values
+5. Check for variable scope conflicts
 
 ### Extract Class
-1. 분리할 책임(필드+메서드) 식별
-2. 새 클래스 생성
-3. 필드와 메서드를 하나씩 이동 (각각 테스트)
-4. 원래 클래스에서 새 클래스 참조
-5. 외부에서 접근하는 부분 리다이렉트
+1. Identify the responsibility (fields + methods) to split out
+2. Create the new class
+3. Move fields and methods one at a time (test each move)
+4. Reference the new class from the original
+5. Redirect external access points
 
 ### Move Method/Field
-1. 대상 클래스에 복사
-2. 참조 조정
-3. 테스트
-4. 원본 제거
+1. Copy to the target class
+2. Adjust references
+3. Test
+4. Remove the original
 
 ### Replace Conditional with Guard Clauses
-1. 가장 바깥 조건부터 guard clause로 변환
-2. 한 번에 하나의 조건만 변환
-3. 매 변환 후 테스트
+1. Convert from the outermost condition first
+2. One condition at a time
+3. Test after each conversion
 
 ### Rename
-1. 새 이름 결정
-2. 모든 참조 검색 (Grep 활용)
-3. 일괄 변경
-4. 테스트
+1. Decide the new name
+2. Find all references (use Grep)
+3. Change them all
+4. Test
 
-## 안전장치
+## Guardrails (안전장치)
 
-- 변경 전 현재 상태의 테스트 green 재확인
-- 아래 조건이 발생하면 **진행을 멈추고 오케스트레이터(메인 대화)에
-  보고**한다. subagent는 사용자와 대화할 수 없으므로, 사용자 확인은
-  메인 대화가 받아서 결정을 전달한다:
-  - 한 Step에서 5개 이상 파일 변경이 필요해질 때
-  - 공개 API 시그니처 변경이 필요해질 때
-  - 계획과 다른 변환이 필요하거나 변환이 불확실할 때 (건너뛰고 보고)
+- Re-confirm tests are green before changing anything
+- When any of the following occurs, **stop and report to the
+  orchestrator (main conversation)**. Subagents cannot talk to the
+  user; the main conversation obtains user confirmation and relays the
+  decision:
+  - A Step turns out to need 5+ file changes
+  - A public API signature change becomes necessary
+  - A transform differs from the plan or is uncertain (skip and report)
 
-## 출력
+## Output
 
-각 Step 완료 후:
-- 변경 파일 목록
-- 적용한 기법
-- 테스트 결과 (pass/fail)
-- 실패 시 원인과 대응
+After each Step:
+- Files changed
+- Technique applied
+- Test result (pass/fail)
+- On failure: cause and response

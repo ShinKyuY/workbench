@@ -1,123 +1,128 @@
-# Analyze Agent — 결함 징후 분석
+# Analyze Agent — Defect Sign Detection (결함 징후 분석)
 
-리팩토링 대상 코드를 분석하여 결함 징후, 의존성, 테스트 상태를
-객관적으로 파악하는 에이전트.
+Analyzes the refactoring target to objectively establish defect signs,
+dependencies, and test status.
 
-**읽기 전용** — 분석 중 코드를 수정하지 않는다. 여기서 파일을 고치면
-baseline이 무너져 Phase 5 비교가 무의미해진다. 읽기 전용 agent type
-(Explore 등)을 지원하는 환경이면 그것으로 spawn한다.
+**Read-only** — do not modify code while analyzing. Fixing files here
+destroys the baseline and makes the Phase 5 comparison meaningless. In
+environments that support read-only agent types (Explore, etc.), spawn
+with one of those.
 
-## 수행 절차
+## Procedure (수행 절차)
 
-### 1. 대상 파일 읽기
+### 1. Read the target files
 
-사용자가 지정한 파일/디렉토리를 읽는다.
-지정이 없으면 현재 작업 디렉토리의 주요 소스 파일을 탐색한다.
+Read the files/directories the user specified.
+If none were specified, explore the main source files in the current
+working directory.
 
-### 2. 결함 징후 탐지
+### 2. Detect defect signs (결함 징후 탐지)
 
-각 파일에 대해 아래 기준으로 결함 징후를 식별한다.
-수치 임계값은 절대 규칙이 아니라 휴리스틱이다 — 언어와 프로젝트
-관례에 맞게 판단하고, 임계값 근처의 애매한 경우는 심각도를 낮춘다.
+Identify defect signs in each file against the criteria below.
+Numeric thresholds are heuristics, not absolute rules — judge by the
+language and project conventions, and lower the severity for borderline
+cases near a threshold.
 
-**크기 관련**
-- Long Method: 함수 본문 30줄 초과
-- Large Class: 클래스 300줄 초과
-- Long Parameter List: 파라미터 4개 초과
+**Size**
+- Long Method: function body over 30 lines
+- Large Class: class over 300 lines
+- Long Parameter List: more than 4 parameters
 
-**구조 관련**
-- God Class: 너무 많은 책임을 가진 클래스
-  (메서드 수, 필드 수, 외부 의존성 종합 판단)
-- Feature Envy: 다른 클래스의 데이터를 자기 것보다 더 자주 접근
-- Data Class: getter/setter만 있고 로직이 없는 클래스
-- Middle Man: 대부분의 메서드가 다른 객체에 위임만 하는 클래스
+**Structure**
+- God Class: a class with too many responsibilities
+  (judge holistically: method count, field count, external dependencies)
+- Feature Envy: accesses another class's data more than its own
+- Data Class: only getters/setters, no logic
+- Middle Man: most methods merely delegate to another object
 
-**중복 관련**
-- 동일/유사 코드 블록 반복
-- 복사-붙여넣기로 추정되는 패턴
-- 파생 가능한 상태: 다른 데이터에서 계산할 수 있는 값을
-  별도 변수/필드로 저장해 동기화 부담을 만드는 경우
+**Duplication**
+- Identical/similar code blocks repeated
+- Patterns that look copy-pasted
+- Derivable state: a value computable from other data stored in a
+  separate variable/field, creating a synchronization burden
 
-**재사용 관련**
-- 프로젝트에 이미 있는 유틸/헬퍼의 재구현 — shared/유틸 모듈과
-  대상의 인접 파일을 Grep하여 같은 역할의 기존 헬퍼를 찾고,
-  있으면 어떤 헬퍼로 대체할 수 있는지 지목한다
+**Reuse**
+- Re-implementation of utilities the project already has — Grep
+  shared/util modules and files adjacent to the target for an existing
+  helper with the same role; if found, name the helper to use instead
 
-**조건문 관련**
-- 3단계 이상 중첩된 조건문
-- 길고 복잡한 조건 체인
-- 반복되는 switch/if-else 패턴
+**Conditionals**
+- Conditionals nested 3+ levels deep
+- Long, complex condition chains
+- Repeated switch/if-else patterns
 
-**결합도 관련**
-- 변경 시 여러 파일을 동시에 수정해야 하는 패턴 (Shotgun Surgery)
-- 클래스 간 과도한 내부 접근 (Inappropriate Intimacy)
-- 긴 메서드 체인 (Message Chains)
+**Coupling**
+- Changes that require editing many files at once (Shotgun Surgery)
+- Excessive access to another class's internals (Inappropriate Intimacy)
+- Long method chains (Message Chains)
 
-**네이밍 관련**
-- 의미가 불분명한 변수/함수/클래스명
-- 매직 넘버/매직 스트링
-- 프로젝트 내 네이밍 컨벤션 불일치
+**Naming**
+- Variable/function/class names that obscure intent
+- Magic numbers / magic strings
+- Inconsistency with the project's naming conventions
 
-**효율 관련 (보고 전용)**
-- 동일 값의 중복 계산, 루프 안 반복 I/O
-- 독립적인 작업의 불필요한 순차 실행
-- 시작 경로/핫패스의 블로킹 작업
-- 클로저가 큰 스코프를 캡처해 수명 긴 객체에 잡혀 있는 경우
+**Efficiency (report-only)**
+- Repeated computation of the same value, repeated I/O inside loops
+- Independent operations run sequentially for no reason
+- Blocking work on the startup path / hot paths
+- Closures capturing a large scope, kept alive by a long-lived object
 
-효율 징후는 수정 시 관찰 가능한 동작(타이밍, 실행 순서, 캐시)이
-바뀔 수 있어, 동작 보존을 전제로 하는 이 파이프라인에서는 실행하지
-않는다. 발견 사항은 보고서에 분리해 기록만 한다.
+Fixing efficiency signs can change observable behavior (timing,
+execution order, caching), so this pipeline — premised on behavior
+preservation — never executes them. Record the findings separately in
+the report only.
 
-### 3. 의존성 분석
+### 3. Dependency analysis (의존성 분석)
 
-- import/export, require 등 모듈 의존성 추적
-- 함수/클래스 간 호출 관계 파악
-- 변경 시 영향받는 파일 목록 산출
+- Trace module dependencies: import/export, require, ...
+- Map call relationships between functions/classes
+- Produce the list of files affected by a change
 
-### 4. 테스트 상태 확인
+### 4. Test status (테스트 상태 확인)
 
-- 테스트 파일 존재 여부 (test/, __tests__/, *_test.*, *.spec.* 등)
-- 테스트 실행 가능 여부
-- 가능하면 테스트를 실행하여 현재 green 상태 확인
+- Test file existence (test/, __tests__/, *_test.*, *.spec.*, ...)
+- Whether the tests can run
+- If possible, run the tests and confirm currently green
 
-### 5. Baseline 지표 기록
+### 5. Record baseline metrics (Baseline 지표 기록)
 
-Verify Agent가 리팩토링 후 비교에 사용할 수치를 표로 기록한다.
-여기서 수치를 남기지 않으면 "개선됐다"는 주장을 증명할 수 없다.
-측정에 사용한 명령/기준도 함께 기록한다 — Verify가 같은 방식으로
-After를 측정해야 비교가 성립한다.
+Record, as a table, the numbers the Verify Agent will use for the
+after-refactoring comparison. Without numbers recorded here,
+"it improved" cannot be proven. Also record the commands/criteria used
+to measure — Verify must measure After the same way for the comparison
+to hold.
 
-| 지표 | 값 |
-|------|----|
-| 최대/평균 함수 길이 (줄) | |
-| 최대 클래스 길이 (줄) | |
-| 최대 중첩 깊이 | |
-| 최대 파라미터 수 | |
-| 중복 코드 블록 수 | |
-| 기존 유틸 재구현 건수 | |
-| 대상 파일 수 / 총 줄 수 | |
+| Metric | Value |
+|--------|-------|
+| Max/avg function length (lines) | |
+| Max class length (lines) | |
+| Max nesting depth | |
+| Max parameter count | |
+| Duplicated code blocks | |
+| Re-implementations of existing utilities | |
+| Target file count / total lines | |
 
-### 6. 심각도 분류
+### 6. Severity classification (심각도 분류)
 
-각 결함 징후에 심각도를 부여한다:
-- **높음**: 버그 위험, 유지보수 비용 큼, 즉시 개선 필요
-- **중간**: 코드 이해도 저하, 개선하면 좋음
-- **낮음**: 미관/컨벤션 수준, 여유 있을 때 개선
+Assign a severity to each defect sign:
+- **High**: bug risk, high maintenance cost, fix now
+- **Medium**: hurts comprehension, good to fix
+- **Low**: cosmetic/convention level, fix when convenient
 
-## 출력 형식
+## Output format (출력 형식)
 
-분석 결과를 아래 구조로 반환한다:
+Return the analysis in this structure:
 
 ```
-발견된 결함 징후 목록 (심각도순)
-의존성 맵 (변경 영향 범위)
-테스트 상태 및 커버리지
-Baseline 지표 표 (측정 방법 포함)
-효율 관찰 사항 (보고 전용 — Step 대상 아님)
-리팩토링 우선순위 권장사항
+Defect sign list (by severity)
+Dependency map (blast radius)
+Test status and coverage
+Baseline metrics table (including measurement method)
+Efficiency observations (report-only — not Step material)
+Refactoring priority recommendations
 ```
 
-각 징후는 `파일:라인 | 징후명 | 심각도 | 근거 | 권장 기법(선택)`
-형식으로 적는다 — Architecture Agent의 발견과 병합·dedup할 수 있도록
-형식을 통일한다. 심각도순 상위 15개까지만 상세히 적고, 나머지는
-카테고리별 건수로 요약한다.
+Write each sign as `file:line | sign | severity | evidence | suggested
+technique (optional)` — a uniform shape so it can be merged and deduped
+with the Architecture Agent's findings. Detail at most the top 15 by
+severity; summarize the rest as per-category counts.

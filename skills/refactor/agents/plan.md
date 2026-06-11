@@ -1,76 +1,76 @@
-# Plan Agent — 리팩토링 전략 수립
+# Plan Agent — Refactoring Strategy (리팩토링 전략 수립)
 
-분석 결과를 바탕으로 구체적인 리팩토링 실행 계획을 세우는 에이전트.
+Builds a concrete refactoring execution plan from the analysis results.
 
-## 입력
+## Input
 
-Analyze Agent의 출력:
-- 결함 징후 목록 (심각도 포함)
-- 의존성 맵
-- 테스트 상태
+Analyze Agent output:
+- Defect sign list (with severity)
+- Dependency map
+- Test status
 
-## 수행 절차
+## Procedure (수행 절차)
 
-### 1. 리팩토링 기법 매칭
+### 1. Technique matching (기법 매칭)
 
-각 결함 징후에 적합한 리팩토링 기법을 선택한다.
-`references/techniques.md`를 참조하되, 핵심 매칭:
+Pick a suitable refactoring technique for each defect sign.
+Consult `references/techniques.md`; core matches:
 
-| 징후 | 1순위 기법 | 대안 |
-|------|-----------|------|
+| Sign | First choice | Alternative |
+|------|--------------|-------------|
 | Long Method | Extract Method | Replace Temp with Query |
 | God Class | Extract Class | Move Method + Move Field |
 | Feature Envy | Move Method | Extract Method → Move |
-| Duplicate Code | Extract Method | Pull Up Method (상속 시) |
+| Duplicate Code | Extract Method | Pull Up Method (with inheritance) |
 | Deep Nesting | Guard Clauses | Decompose Conditional |
 | Long Param List | Parameter Object | Preserve Whole Object |
 | Switch Statements | Polymorphism | Strategy Pattern |
-| Magic Numbers | Symbolic Constant | Config/Enum 추출 |
-| Data Class | Move 관련 로직 합류 | 필드 캡슐화 |
+| Magic Numbers | Symbolic Constant | Extract to config/enum |
+| Data Class | Move related logic in | Encapsulate Field |
 | Middle Man | Remove Middle Man | Inline Class |
-| 기존 유틸 재구현 | 기존 헬퍼 호출로 대체 | Substitute Algorithm |
-| 특수 케이스 누적 | 기반 메커니즘 일반화 | Replace Conditional with Polymorphism |
+| Re-implemented existing utility | Replace with the existing helper | Substitute Algorithm |
+| Special-case accretion | Generalize the underlying mechanism | Replace Conditional with Polymorphism |
 
-Analyze의 효율 관찰 사항(보고 전용)은 Step으로 만들지 않는다.
-동작 보존을 테스트로 증명하기 어려운 변경이므로, 최종 보고의
-권장사항으로만 넘긴다.
+The Analyze Agent's efficiency observations (report-only) never become
+Steps. Their behavior preservation is hard to prove with tests, so pass
+them on only as recommendations in the final report.
 
-### 2. 실행 순서 결정
+### 2. Execution order (실행 순서 결정)
 
-원칙: **안전한 것부터, 의존성 순서대로**
+Principle: **safest first, in dependency order**
 
-일반적 순서:
-1. Rename (이름 개선) — 가장 안전, 이해도 즉시 향상
-2. Extract (중복/긴 코드 분리) — 구조 개선의 기본
-3. Move (책임 재배치) — Extract 후 적절한 위치로 이동
-4. Simplify (조건문 정리) — 로직 명확화
-5. Generalize (추상화) — 필요한 경우에만, 마지막에
+Typical order:
+1. Rename — safest, immediately improves comprehension
+2. Extract — the basis of structural improvement
+3. Move — relocate responsibilities after extraction
+4. Simplify — clarify conditionals and logic
+5. Generalize — only when needed, last
 
-### 3. 단계별 상세 계획 작성
+### 3. Detailed per-Step plan
 
-각 Step에 대해:
-- **기법명**: 적용할 리팩토링 기법
-- **대상**: 파일:라인 또는 함수/클래스명
-- **변경 내용**: 구체적으로 무엇을 어떻게 바꾸는지
-- **영향 파일**: 이 변경으로 수정이 필요한 다른 파일
-- **리스크**: 낮음/중간/높음 + 이유
-- **롤백**: 실패 시 되돌리는 방법
+For each Step:
+- **Technique**: the refactoring to apply
+- **Target**: file:line or function/class name
+- **Change**: concretely what changes, and how
+- **Affected files**: other files this change requires editing
+- **Risk**: low/medium/high + why
+- **Rollback**: how to undo on failure
 
-### 4. 리스크 종합 평가
+### 4. Overall risk assessment
 
-- 공개 API 변경 여부 (함수 시그니처, 클래스 인터페이스)
-- 하위 호환성 영향
-- 테스트 수정 필요 여부 (필요하면 이유 명시)
-- 전체 롤백 전략
+- Public API changes (function signatures, class interfaces)
+- Backward compatibility impact
+- Whether tests need updating (state why, if so)
+- Overall rollback strategy
 
-### 5. 테스트 부재 시 대응
+### 5. When there are no tests
 
-테스트가 없는 코드를 리팩토링할 때:
-1. characterization test 작성을 먼저 제안
-2. 사용자가 테스트 없이 진행하길 원하면,
-   각 단계를 더 작게 쪼개고 수동 검증 포인트를 추가
+When refactoring untested code:
+1. Propose writing characterization tests first
+2. If the user wants to proceed without tests, slice each Step smaller
+   and add manual verification points
 
-## 출력 형식
+## Output format (출력 형식)
 
-번호가 매겨진 Step 목록으로 반환한다.
-각 Step은 독립적으로 커밋 가능한 단위여야 한다.
+Return a numbered list of Steps.
+Each Step must be an independently committable unit.

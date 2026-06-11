@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parquet 파일 웹 뷰어 — 브라우저에서 테이블 탐색."""
+"""Parquet file web viewer — browse tables in the browser."""
 import argparse
 import json
 import webbrowser
@@ -60,18 +60,18 @@ padding:2px 6px;border-radius:4px;background:#0f172a}
 <h1>Parquet Viewer</h1>
 <div class="info" id="info"></div>
 <div class="controls">
-  <input id="search" placeholder="검색 (컬럼:값  또는  전체 검색)">
-  <button onclick="doSearch()">검색</button>
-  <button onclick="clearSearch()">초기화</button>
+  <input id="search" placeholder="Search (column:value  or  full text)">
+  <button onclick="doSearch()">Search</button>
+  <button onclick="clearSearch()">Clear</button>
   <span id="search-count"></span>
   <span style="flex:1"></span>
-  <button id="prev" onclick="prevPage()">← 이전</button>
+  <button id="prev" onclick="prevPage()">← Prev</button>
   <span class="page-info" id="page-info"></span>
-  <button id="next" onclick="nextPage()">다음 →</button>
+  <button id="next" onclick="nextPage()">Next →</button>
 </div>
 <details style="margin-bottom:8px">
   <summary style="cursor:pointer;color:#38bdf8;font-size:.85rem">
-    컬럼 표시/숨기기</summary>
+    Show/hide columns</summary>
   <div class="col-toggle" id="col-toggle"></div>
 </details>
 <div class="table-wrap"><table id="tbl"></table></div>
@@ -89,9 +89,9 @@ async function fetchMeta(){
   sourceRows=d.source_rows;
   let info=d.file+' — '+totalRows.toLocaleString()+' rows × '
     +cols.length+' cols';
-  if(sampled) info+=' (샘플: 전체 '
-    +sourceRows.toLocaleString()+'행 중 앞 '
-    +totalRows.toLocaleString()+'행)';
+  if(sampled) info+=' (sample: first '
+    +totalRows.toLocaleString()+' of '
+    +sourceRows.toLocaleString()+' rows)';
   document.getElementById('info').textContent=info;
   buildColToggle();
   loadPage(0);
@@ -130,12 +130,12 @@ async function loadPage(p){
   page=d.page; totalPages=d.total_pages; totalRows=d.total_rows;
   document.getElementById('page-info').textContent=
     (page+1)+' / '+totalPages+' ('+totalRows.toLocaleString()
-    +'건)';
+    +' rows)';
   document.getElementById('prev').disabled=page<=0;
   document.getElementById('next').disabled=page>=totalPages-1;
   document.getElementById('search-count').textContent=
-    q?'검색 결과: '
-    +totalRows.toLocaleString()+'건':'';
+    q?'Matches: '
+    +totalRows.toLocaleString()+' rows':'';
   window._lastData=d.data;
   renderTable(d.data);
 }
@@ -202,10 +202,10 @@ fetchMeta();
 
 
 def load_data(path, max_rows=None):
-    """parquet 파일 또는 part 파일 디렉터리를 DataFrame으로 로드.
+    """Load a parquet file or a directory of part files into a DataFrame.
 
-    max_rows가 있으면 pyarrow dataset으로 앞 N행만 읽어
-    대용량 파일도 메모리 부담 없이 연다.
+    With max_rows, read only the first N rows via pyarrow dataset so
+    even large files open without memory pressure.
     """
     print(f"Loading {path} ...", flush=True)
     ds = pads.dataset(path, format="parquet")
@@ -227,7 +227,7 @@ def load_data(path, max_rows=None):
 
 
 def sanitize_chunk(chunk):
-    """JSON 직렬화 불가 값(bytes 등)을 문자열로 변환."""
+    """Convert non-JSON-serializable values (bytes, etc.) to strings."""
     chunk = chunk.copy()
     for c in chunk.columns:
         if chunk[c].dtype == object:
@@ -347,7 +347,7 @@ def make_handler(df, parquet_path, source_rows):
 
 
 def bind_server(handler, start_port):
-    """start_port부터 빈 포트를 찾아 서버를 바인딩."""
+    """Find a free port starting at start_port and bind the server."""
     for port in range(start_port, start_port + PORT_TRIES):
         try:
             return HTTPServer(("", port), handler), port
@@ -364,23 +364,23 @@ def bind_server(handler, start_port):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Parquet 파일 웹 뷰어"
+        description="Parquet file web viewer"
     )
     parser.add_argument(
         "file",
-        help="parquet 파일 또는 part 파일 디렉터리 경로",
+        help="path to a parquet file or a directory of part files",
     )
     parser.add_argument(
         "-p", "--port", type=int, default=8765,
-        help="서버 포트 (사용 중이면 자동으로 다음 포트 탐색)",
+        help="server port (probes the next port if in use)",
     )
     parser.add_argument(
         "-n", "--rows", type=int, default=None,
-        help="최대 로딩 행 수 (앞 N행만 읽음)",
+        help="max rows to load (reads only the first N rows)",
     )
     parser.add_argument(
         "--no-open", action="store_true",
-        help="브라우저 자동 열기 비활성화",
+        help="disable auto-opening the browser",
     )
     args = parser.parse_args()
 
