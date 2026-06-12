@@ -1,18 +1,12 @@
 ---
 name: handoff
 description: >-
-  Create/update HANDOFF.md so the next agent in a fresh context can take
-  over the work from a cold start. Use this skill whenever a
-  work-continuity request appears: "handoff", "hand over the work",
-  "continue in the next session", "save the context", "wrap this up for
-  later", "back up before /clear" — including Korean phrasings such as
-  "인수인계", "다음 세션에서 이어서", "작업 넘기기", "컨텍스트 저장",
-  "여기까지 정리해줘", "다른 세션에서 이어할게", "내일 이어서 하게
-  정리해놔". Triggers on long work interruptions (leaving for the day),
-  nearing the context-window limit, ending a session while background
-  jobs keep running, or delegating to another agent (codex, etc.).
-  Do NOT use it when merely reading an existing HANDOFF.md to take over
-  work, or for commit messages, READMEs, or meeting notes.
+  Create/update HANDOFF.md so the next agent can take over from a cold
+  start. Use on any work-continuity request — "handoff", "continue in
+  the next session", "인수인계", "다음 세션에서 이어서", "여기까지
+  정리해줘" — or when ending a session with background jobs running,
+  nearing the context limit, or delegating to another agent. Not for
+  reading an existing HANDOFF.md, commit messages, or meeting notes.
 ---
 
 # Handoff Document Generation (인수인계 문서 생성)

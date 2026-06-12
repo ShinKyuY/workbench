@@ -9,7 +9,7 @@
     {
       "name": "workbench",
       "source": "./",
-      "description": "커스텀 스킬 모음: handoff, analyze-ml-repo, refactor, md2html, parquet-viewer"
+      "description": "개발 도구 모음: handoff, analyze-ml-repo, refactor, md2html, parquet-viewer"
     }
   ]
 }

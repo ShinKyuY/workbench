@@ -1,22 +1,12 @@
 ---
 name: refactor
-description: >
-    Code refactoring and architecture review skill. Runs a subagent
-    pipeline covering defect-sign analysis, architecture checks
-    (SOLID/coupling/cohesion), refactoring planning, safe step-by-step
-    execution, and verification. Use this skill whenever the user asks
-    for refactoring, code cleanup, code improvement, removing code
-    smells, deduplication, extracting functions/classes, reducing
-    complexity, architecture review, structure checks, SOLID violations,
-    dependency cleanup, layer separation, lowering coupling, raising
-    cohesion, "God Class", "DRY violation", or says things like
-    "clean this code up", "this code is messy", "improve the structure",
-    "review the architecture", "tangled dependencies", "this function is
-    too long" — including Korean phrasings such as "리팩토링",
-    "코드 정리", "구조 개선해줘", "아키텍처 봐줘", "이 코드 좀 깔끔하게",
-    "코드 지저분한데", "의존성이 꼬여있어", "너무 긴 함수". Trigger when
-    the goal is structural quality improvement of existing code, not bug
-    fixes or new features.
+description: >-
+  Code refactoring and architecture review via a subagent pipeline:
+  defect signs, SOLID/coupling/cohesion checks, planning, safe
+  step-by-step execution, verification. Use when the goal is structural
+  quality of existing code — refactoring, cleanup, code smells,
+  deduplication, architecture review, "이 코드 좀 깔끔하게", "구조
+  개선해줘", "의존성이 꼬여있어" — not bug fixes or new features.
 ---
 
 # Refactor — Code Refactoring Skill (코드 리팩토링 스킬)
