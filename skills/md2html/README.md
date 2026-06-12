@@ -1,7 +1,7 @@
 # md2html
 
 > **Your AI writes docs. md2html turns them into pages people actually read.**
-> A portable skill for Claude Code, Codex, Antigravity — or any AI agent — that turns long-form Markdown (plans, specs, system designs, RFCs, runbooks, postmortems, brainstorms, notes) into a single self-contained HTML page with sidebar TOC, Mermaid diagrams, step timelines, callouts, comparison cards, and a light/dark Claude-orange theme.
+> A portable skill for Claude Code, Codex, Antigravity — or any AI agent — that turns long-form Markdown (plans, specs, system designs, RFCs, runbooks, postmortems, brainstorms, notes) into a single self-contained HTML page with sidebar TOC, Mermaid diagrams, KaTeX math, step timelines, callouts, comparison cards, and a light/dark Claude-orange theme.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-D97757.svg)](LICENSE)
 [![Zero install](https://img.shields.io/badge/install-zero%20deps-success.svg)](#install)
@@ -36,8 +36,9 @@ It's not a Markdown-to-HTML converter. **It's an analyzer.** The agent decides w
 ## Why it's worth your `~/.claude/skills` slot
 
 - **Reads like a product page, not a spec.** Sidebar TOC with scroll-spy, anchor links on every heading, copy-to-clipboard on every code block, a scroll progress bar at the top. Things you'd build into a real docs site.
-- **Diagrams instead of paragraphs.** Three-hop flows automatically become Mermaid `flowchart` blocks. Trade-off discussions become side-by-side comparison cards. The agent decides — you don't write any of it.
-- **One file. Email it. Drop it in Slack. Open it on a plane.** Self-contained HTML with embedded CSS and theme JS. The only network request is the Mermaid CDN, and you can inline that too if you care.
+- **Diagrams instead of paragraphs.** Three-hop flows become theme-native HTML/SVG flow diagrams (KaTeX-capable labels, print-safe); complex diagrams (sequence, ER, state, gantt) become Mermaid blocks. Trade-off discussions become side-by-side comparison cards. The agent decides — you don't write any of it.
+- **LaTeX math renders properly.** `$...$` / `$$...$$` in the source come out as real KaTeX typesetting — subscripts, `\mathbb{E}`, display equations — never flattened into code spans.
+- **One file. Email it. Drop it in Slack. Open it on a plane.** Self-contained HTML with embedded CSS and theme JS. The only network requests are the Mermaid and KaTeX CDNs, and you can inline those too if you care.
 - **Zero install for your users.** No `npm install`. No Docker. The whole skill is a few markdown/HTML files plus one stdlib-only Python script. Anyone with an AI agent and `git clone` can use it in under a minute.
 - **Portable across agents.** Works the same way in Claude Code, Codex CLI, Antigravity, Cursor, Continue.dev — anywhere an agent can read a file and write a file. No agent-specific code.
 - **Source language → output language, automatically.** Korean plan? `목차` instead of `Contents`. Korean sources get Korean UI labels; everything else gets English.
@@ -94,7 +95,7 @@ The agent picks components based on what's actually in the doc:
 | What's in the Markdown                          | What you get                          |
 | ---                                             | ---                                   |
 | Numbered list of actions                        | Step cards with timeline rail         |
-| "A calls B, B writes to DB" prose               | Mermaid `flowchart`                   |
+| "A calls B, B writes to DB" prose               | Native HTML/SVG flow (Mermaid if complex) |
 | "Pros / Cons", "Trade-offs of X"                | Two-column pros-cons box              |
 | "Option A vs B vs C"                            | Comparison cards (with ★ Recommended) |
 | "Don't do X" / "Must do Y"                      | Danger / decision callout             |
@@ -138,7 +139,7 @@ rm -rf ~/.claude/skills/md2html
 ```
 md2html/
 ├── SKILL.md         # Instructions the agent loads on /md2html
-├── template.html    # HTML skeleton: CSS + Mermaid + theme JS
+├── template.html    # HTML skeleton: CSS + Mermaid + KaTeX + theme JS
 ├── components.md    # Component catalog the agent assembles from
 ├── scripts/
 │   └── build.py     # Assembler: merges fragments into template.html + verifies

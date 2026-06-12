@@ -116,20 +116,8 @@ For numbered sequences (action items, plan steps, migration steps, workflow). Wr
 
 ## 4. Callouts
 
-Use for important asides. Pick the variant that matches semantic meaning.
+Use for important asides. One HTML shape, six variants — pick by semantic meaning, then swap the variant class, the icon id, and the title (localized defaults in the table above).
 
-### 4a. Info — context, background, FYI
-```html
-<aside class="callout callout-info">
-  <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-info"/></svg>
-  <div class="callout-body">
-    <p class="callout-title">Context</p>
-    <p>The current system polls every 5 minutes, adding ~3 minutes of end-to-end delay.</p>
-  </div>
-</aside>
-```
-
-### 4b. Warning — gotcha, edge case, risk
 ```html
 <aside class="callout callout-warn">
   <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-warn"/></svg>
@@ -140,60 +128,14 @@ Use for important asides. Pick the variant that matches semantic meaning.
 </aside>
 ```
 
-### 4c. Danger — blocker, breaking change, must-not-do
-```html
-<aside class="callout callout-danger">
-  <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-danger"/></svg>
-  <div class="callout-body">
-    <p class="callout-title">Do not do this</p>
-    <p>Never drop the column before the old deploy has fully rolled out.</p>
-  </div>
-</aside>
-```
-
-### 4d. Success — confirmation, what's already done
-```html
-<aside class="callout callout-success">
-  <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-success"/></svg>
-  <div class="callout-body">
-    <p class="callout-title">Done</p>
-    <p>The new API passed a 10k RPS load test, p99 = 80ms.</p>
-  </div>
-</aside>
-```
-
-### 4e. Decision — recorded decision / ADR
-```html
-<aside class="callout callout-decision">
-  <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-decision"/></svg>
-  <div class="callout-body">
-    <p class="callout-title">Decision</p>
-    <p>Chose Postgres over MongoDB because the payment flow needs ACID transactions.</p>
-  </div>
-</aside>
-```
-
-### 4f. Tip — recommendation, best practice
-```html
-<aside class="callout callout-tip">
-  <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tip"/></svg>
-  <div class="callout-body">
-    <p class="callout-title">Tip</p>
-    <p>Cache this query for 5 minutes to cut DB load by 80%.</p>
-  </div>
-</aside>
-```
-
-### 4g. Security — using lock icon for auth/security notes
-```html
-<aside class="callout callout-info">
-  <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-lock"/></svg>
-  <div class="callout-body">
-    <p class="callout-title">Security</p>
-    <p>The webhook runs inside the VPC and never crosses the public internet.</p>
-  </div>
-</aside>
-```
+| Variant class | Icon | Use for |
+|---|---|---|
+| `callout-info` | `#i-info` | context, background, FYI — use `#i-lock` for security/auth notes |
+| `callout-warn` | `#i-warn` | gotcha, edge case, risk |
+| `callout-danger` | `#i-danger` | blocker, breaking change, must-not-do |
+| `callout-success` | `#i-success` | confirmation, what's already done |
+| `callout-decision` | `#i-decision` | recorded decision / ADR |
+| `callout-tip` | `#i-tip` | recommendation, best practice |
 
 ---
 
@@ -202,13 +144,6 @@ Use for important asides. Pick the variant that matches semantic meaning.
 For the single most important insight/conclusion of a section.
 
 ```html
-<!-- EN -->
-<div class="highlight">
-  <span class="highlight-label">Key point</span>
-  <p>Bottom line: moving from polling to webhooks cuts latency from 3 minutes to &lt;5s and saves 60% of API calls.</p>
-</div>
-
-<!-- KO -->
 <div class="highlight">
   <span class="highlight-label">핵심</span>
   <p>결론: 폴링을 웹훅으로 바꾸면 지연이 3분에서 5초 미만으로 줄고 API 호출이 60% 감소한다.</p>
@@ -216,18 +151,18 @@ For the single most important insight/conclusion of a section.
 ```
 
 - Use sparingly (≤ 1 per major section). If everything is highlighted, nothing is.
-- The `highlight-label` text comes from the language label table above.
+- The `highlight-label` text follows the language table (`Key point` / `핵심`).
 
 ---
 
-## 6. Mermaid diagram
+## 6. Mermaid diagram (complex diagrams only)
 
-Detect these patterns in the source `.md` and convert them:
-- "flow / 흐름 / step A → step B → step C" → `flowchart LR` or `flowchart TD`
-- "client calls server, server calls DB" → `sequenceDiagram`
+**Simple flows do NOT belong here** — a linear chain or a single fan-out/fan-in with ≤ ~8 nodes uses the native flow component (§6b): it matches the theme, supports KaTeX in labels, and has no CDN/render flash. Use mermaid only when the structure genuinely needs a layout engine:
+- "client calls server, server calls DB" (lifelines, ordered messages) → `sequenceDiagram`
 - "table A has an FK to table B" → `erDiagram`
 - "state machine / 상태 전이" → `stateDiagram-v2`
 - "phases / roadmap / timeline" → `gantt`
+- dense flowcharts: > 8 nodes, multiple branch points, or cross edges → `flowchart LR`/`TD`
 
 ```html
 <figure class="diagram">
@@ -250,17 +185,96 @@ flowchart LR
 - Use `(...)` for service/process, `[...]` for box, `[(...)]` for database, `((...)) ` for circle, `{...}` for decision, `/.../` for queue/event.
 - Always add a `<figcaption>` explaining what the diagram shows.
 
-**Convert architecture description to mermaid:**
-> "The client calls the API Gateway. The gateway verifies the JWT, then routes to the Order Service. The Order Service writes to Postgres and publishes an event to Kafka."
+---
 
-Becomes:
+## 6b. Native flow diagram (the default for simple flows)
+
+For linear chains and single fan-out/fan-in flows (≤ ~8 nodes) — the majority of flows in real documents. Pure theme-styled HTML/CSS: light/dark aware, print-safe, no CDN, and **labels can contain KaTeX** (`\(\Lambda(x)\)`), which mermaid can't do. You may sketch the topology in mermaid mentally or on scratch, but the shipped HTML uses this component.
+
+```html
+<figure class="diagram">
+  <div class="flow" role="img" aria-label="2-head 학습과 score 조립 흐름">
+    <div class="flow-node">win(IMP) 로그 <small>입력 \(x\)</small></div>
+    <div class="flow-arrow" aria-hidden="true"></div>
+    <div class="flow-node">HyFormer backbone</div>
+    <div class="flow-arrow" aria-hidden="true"></div>
+    <div class="flow-row">
+      <div class="flow-node">\(\Lambda(x)\) head <small>Poisson NLL</small></div>
+      <div class="flow-node">\(m_{\mathrm{gap}}(x)\) head <small>regression</small></div>
+    </div>
+    <div class="flow-arrow" aria-hidden="true"><span class="flow-arrow-label">곱으로 조립</span></div>
+    <div class="flow-node flow-node-accent">\(s_i \propto \mathbb{E}[K_i]\cdot m_{\mathrm{gap},i}\)</div>
+  </div>
+  <figcaption class="diagram-caption">2-head 학습과 score 조립 흐름.</figcaption>
+</figure>
 ```
-flowchart LR
-  Client --> Gateway
-  Gateway -->|verify JWT| Order[Order Service]
-  Order --> DB[(Postgres)]
-  Order --> Kafka[/Kafka/]
+
+**Building blocks:**
+
+| Class | Role |
+|---|---|
+| `.flow` | container, vertical (top-down). Add `flow-lr` for horizontal. |
+| `.flow-node` | one box. `<small>` inside = secondary line. KaTeX OK. |
+| `.flow-node-accent` | highlighted box (result/outcome) — use once, at most. |
+| `.flow-arrow` | connector between siblings. Optional `<span class="flow-arrow-label">label</span>` inside. |
+| `.flow-row` | parallel branches (fan-out): put 2-4 `.flow-node` inside, between two `.flow-arrow`s. |
+
+**Rules:**
+- Alternate node/arrow as direct children of `.flow`: node, arrow, node, arrow, …
+- `role="img"` + `aria-label` describing the flow on the `.flow` container; `aria-hidden="true"` on arrows.
+- Keep node text short (≤ 6 words); detail goes in `<small>` or the `<figcaption>`.
+- Needs more than one `.flow-row` level of branching, back-edges, or > ~8 nodes? It's not a simple flow — use mermaid (§6).
+
+---
+
+## 6c. Wireframe mockup (UI/layout descriptions)
+
+When the source *describes a screen* — "상단에 네비게이션, 좌측에 메뉴, 메인에 카드 3개" — prose makes the reader rebuild the layout in their head. Render it as a wireframe instead: structure over pixels, placeholder for content areas. The reader sees the screen in one glance.
+
+```html
+<figure class="diagram">
+  <div class="mockup" role="img" aria-label="대시보드 화면 구성">
+    <div class="mockup-header">Pool 현황 대시보드</div>
+    <div class="mockup-body">
+      <div class="mock-nav">로고 · adset 선택 · 기간 · <span class="mock-button">새로고침</span></div>
+      <div class="mock-row">
+        <div class="mock-sidebar">
+          <ul>
+            <li class="active">Pool 현황</li>
+            <li>Score 분포</li>
+            <li>제약 모니터링</li>
+          </ul>
+        </div>
+        <div class="mock-content">
+          <div class="placeholder">기회량 / 지출 / ROAS 카드 3개</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <figcaption class="diagram-caption">대시보드 레이아웃 — 메뉴별 화면은 §2 참조.</figcaption>
+</figure>
 ```
+
+**Building blocks:**
+
+| Class | Role |
+|---|---|
+| `.mockup` + `.mockup-header` + `.mockup-body` | framed screen with a title bar |
+| `.mock-nav` | top navigation bar |
+| `.mock-row` | horizontal band (sidebar + content) |
+| `.mock-sidebar` (`<li class="active">` = selected) | side menu |
+| `.mock-content` | main area |
+| `.mock-button`, `.mock-input` | interactive element stand-ins |
+| `.placeholder` | hatched box for "content goes here" areas |
+| `.split` | two mockups side-by-side (layout A vs B, before/after) |
+
+**Rules:**
+- **Structure over pixel fidelity** — a wireframe answers "what goes where", not "what does it look like". Use `.placeholder` for anything that's content, not layout.
+- Label every region with the source's own terms (menu names, button labels verbatim — Critical rule 1 applies to UI text too).
+- For "layout A vs B" decisions, put two `.mockup`s in `.split` and mark the chosen one in the caption or with a decision callout — same logic as comparison cards (§8).
+- Wrap in `<figure class="diagram">` + `<figcaption>` like other diagrams.
+- One mockup per screen. A multi-screen journey = flow (§6b) of screen names, plus a mockup for the 1-2 screens the document actually details.
+- No inline `style=` attributes — these classes are the whole vocabulary.
 
 ---
 
@@ -269,25 +283,6 @@ flowchart LR
 For trade-off discussions ("Trade-offs of X…" / "X의 장단점…").
 
 ```html
-<!-- EN -->
-<div class="proscons">
-  <div class="proscons-col pros">
-    <h4>✓ Pros</h4>
-    <ul>
-      <li>Fast to ship, no schema change required.</li>
-      <li>Backward compatible with existing clients.</li>
-    </ul>
-  </div>
-  <div class="proscons-col cons">
-    <h4>✕ Cons</h4>
-    <ul>
-      <li>Adds complexity to the routing layer.</li>
-      <li>Two code paths to maintain for one quarter.</li>
-    </ul>
-  </div>
-</div>
-
-<!-- KO -->
 <div class="proscons">
   <div class="proscons-col pros">
     <h4>✓ 장점</h4>
@@ -306,7 +301,7 @@ For trade-off discussions ("Trade-offs of X…" / "X의 장단점…").
 </div>
 ```
 
-- The `<h4>` text follows the language label table.
+- The `<h4>` text follows the language table (`✓ Pros` / `✓ 장점`, `✕ Cons` / `✕ 단점`).
 
 ---
 
@@ -385,8 +380,12 @@ Apply these heuristics while reading the source `.md`:
 | Pattern in source | Component to use |
 |---|---|
 | Numbered list of action items (`1. do X`, `2. do Y`) | Step / Timeline (§3) |
-| Architecture description: A calls B calls C | Mermaid flowchart (§6) |
-| "Client → Server → DB" in text | Mermaid sequence/flow (§6) |
+| Simple flow: linear chain or one fan-out/fan-in, ≤ ~8 nodes | Native flow (§6b) |
+| "Client → Server → DB" in text | Native flow (§6b) |
+| Screen/layout description ("상단 네비, 좌측 메뉴, 메인 영역…") | Wireframe mockup (§6c) |
+| "Layout A vs B" visual decision | Two mockups in `.split` (§6c) |
+| Complex flow: > 8 nodes, multi-branch, cross edges | Mermaid flowchart (§6) |
+| Message exchange with ordering (lifelines) | Mermaid sequenceDiagram (§6) |
 | Schema / ERD description | Mermaid erDiagram (§6) |
 | "Pros / Cons", "장점 / 단점", "Trade-offs" | Pros-Cons (§7) |
 | "Option A / B / C", "Approaches" | Comparison cards (§8) |
@@ -399,6 +398,7 @@ Apply these heuristics while reading the source `.md`:
 | "Recommendation", "Best practice", "팁" | Callout tip (§4f) |
 | Long code / appendix / FAQ | Collapsible (§9) |
 | Short comparison table (≤ 4 columns) | Markdown table (§10) |
+| LaTeX math (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`) | KaTeX math (§15) — never `<code>` |
 
 ---
 
@@ -408,11 +408,13 @@ Apply these heuristics while reading the source `.md`:
 - ❌ Don't wrap EVERYTHING in callouts/highlights — it dilutes the emphasis.
 - ❌ Don't use `<ol>` for plan steps — use `.timeline` instead.
 - ❌ Don't make mermaid too complex (> 15 nodes) — split into multiple small diagrams.
+- ❌ Don't ship a plain mermaid flowchart for a simple linear/fan-out flow — use the native flow component (§6b). It matches the theme, prints reliably, renders KaTeX labels, and has no CDN flash.
 - ❌ Don't inline-style — every style already lives in `template.html`.
 - ❌ Don't forget `id` on headings — the TOC and anchor links break.
 - ❌ Don't add `<script>` tags or load external libraries.
 - ❌ Don't translate the Markdown line by line — ANALYZE first, then pick a component.
 - ❌ Don't use `<h1>` in body content — `.doc-title` is already the H1; use H2/H3 for sections.
+- ❌ Don't render math as `<code>`/unicode approximation (`E[K_i]·m_i`) — subscripts and operators get destroyed and the document's technical core flattens. Use KaTeX delimiters (§15).
 
 ---
 
@@ -502,3 +504,35 @@ JS auto-hides `<aside class="toc">` when `#toc-nav` has no links. Nothing extra 
 
 ### 14g. Long URLs / identifiers
 `.content` already has `overflow-wrap: anywhere` — long URLs/identifiers wrap without breaking the layout.
+
+---
+
+## 15. Math (KaTeX)
+
+`template.html` ships KaTeX (CDN, same graceful-degradation policy as Mermaid — offline shows raw LaTeX). Use it whenever the source contains LaTeX math: `$...$`, `$$...$$`, `\(...\)`, `\[...\]`.
+
+The auto-renderer recognizes ONLY these delimiters in the output HTML:
+
+| Kind | Write in content.html | Source mapping |
+|---|---|---|
+| Inline | `\( m_{\mathrm{gap}} \)` | `$...$` and `\(...\)` → `\(...\)` |
+| Display | `$$ ... $$` in its own `<p>` | `$$...$$` and `\[...\]` → `$$...$$` |
+
+Single-`$` is deliberately NOT a delimiter, so literal dollar amounts in prose stay safe — that's why you must convert source `$...$` to `\(...\)`.
+
+```html
+<!-- inline math inside a sentence -->
+<p>최적 bid는 \(b^*=v/\mu\)다. 즉 \(v\approx\mu b\)이고, 낙찰 한 번의 surplus는</p>
+
+<!-- display math: own paragraph, LaTeX body kept verbatim -->
+<p>$$ v-\mu p\;\approx\;\mu(b-p). $$</p>
+```
+
+**Rules:**
+
+- **LaTeX body stays verbatim** — only the delimiters change. Never "simplify" `m_{\mathrm{gap}}` to `m_gap`, `\mathbb{E}` to `E`, or `\le` to `≤`. The notation IS the content.
+- **Math and code are disjoint.** KaTeX skips `<pre>`/`<code>`, so math placed there never renders. Conversely, real code/columns/identifiers (`bidprice`, `idno × placementgroup`) stay `<code>` — don't dress code up as math.
+- **HTML-escape inside math**: `<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;` (KaTeX reads the decoded text, so `\{k : \Delta_k \ge \tau\}` with `&lt;`/`&gt;` renders correctly).
+- A display equation in the middle of a source paragraph: split the paragraph — prose `<p>`, then `<p>$$...$$</p>`, then the continuation `<p>`.
+- Math works inside `<li>`, table cells, callouts, and highlights — the renderer walks the whole `.content` DOM.
+- **Mermaid node labels and headings can't use KaTeX.** Inside diagrams use plain unicode (`Λ(x) head — Poisson NLL`). Same for `<h2>`/`<h3>` text: the TOC sidebar copies heading text outside the renderer's scope, so a heading like `3.3 $\Lambda$ / $\mathbb{E}[K]$` becomes `3.3 Λ / E[K]` in both the heading and its TOC entry. These are the only places unicode math notation is right.

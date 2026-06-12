@@ -30,6 +30,9 @@ REQUIRED_KEYS = [
 MERMAID_TYPES = ("flowchart", "sequenceDiagram", "erDiagram", "stateDiagram-v2",
                  "gantt", "classDiagram", "journey", "pie", "timeline")
 START, END = "<!-- CONTENT_START -->", "<!-- CONTENT_END -->"
+# These glyphs inside <code> usually mean LaTeX was flattened instead of
+# rendered via KaTeX (components.md §15).
+MATH_GLYPHS = "≈∝∑Σ∫√𝔼ℙℝ≤≥∈∉⊂⊆⊃·⋅μλΛπτΔδηφψαβγσΩω"
 
 
 def fail(msg):
@@ -53,6 +56,8 @@ def main():
     p.add_argument("--content", required=True)
     p.add_argument("--out", required=True)
     p.add_argument("--no-toc", action="store_true")
+    p.add_argument("--allow-unicode-math-in-code", action="store_true",
+                   help="skip the math-glyph-in-<code> check (only for code that genuinely uses these glyphs)")
     a = p.parse_args()
 
     html = Path(a.template).read_text(encoding="utf-8")
@@ -98,14 +103,32 @@ def main():
     if emoji:
         errors.append(f"emoji glyphs found (use SVG sprite icons): {emoji}")
 
+    # math checks run on the content fragment only (template JS legitimately contains \( \))
+    if content.count("\\(") != content.count("\\)"):
+        errors.append(f"unbalanced inline math delimiters: {content.count(chr(92)+'(')} \\( vs "
+                      f"{content.count(chr(92)+')')} \\)")
+    if content.count("$$") % 2 != 0:
+        errors.append("odd number of $$ — a display math block is unterminated")
+    if not a.allow_unicode_math_in_code:
+        flat = [m for m in re.findall(r"<code>(.*?)</code>", content, flags=re.S)
+                if any(g in m for g in MATH_GLYPHS)]
+        if flat:
+            sample = "; ".join(f"<code>{m.strip()[:60]}</code>" for m in flat[:3])
+            errors.append(f"{len(flat)} <code> span(s) contain math glyphs — render math with KaTeX "
+                          f"(components.md §15), e.g. {sample}")
+
     if errors:
         fail("; ".join(errors))
 
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html, encoding="utf-8")
+    flows = len(re.findall(r'<div class="flow[\s"]', content))
+    mockups = len(re.findall(r'<div class="mockup"', content))
     print(f"BUILD OK: {out} ({len(html.splitlines())} lines, {len(anchors)} anchors verified, "
-          f"{html.count('class=\"mermaid\"')} mermaid blocks, no leftover placeholders)")
+          f"{flows} native flows, {mockups} wireframes, {html.count('class=\"mermaid\"')} mermaid blocks, "
+          f"{content.count('$$') // 2} display + {content.count(chr(92) + '(')} inline math, "
+          f"no leftover placeholders)")
 
 
 if __name__ == "__main__":
