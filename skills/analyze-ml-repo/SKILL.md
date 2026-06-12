@@ -1,17 +1,11 @@
 ---
 name: analyze-ml-repo
 description: >-
-    Structural analysis of ML/AI model code repositories. Use when the
-    user asks to analyze an ML repo, understand model code, map a
-    training pipeline, trace data flow, check tensor shapes, or
-    document the structure of an ML codebase. Must trigger on requests
-    like "how does this model work?", "how does the data flow?",
-    "what are the tensor shapes?", "summarize the workflow", "analyze
-    the code structure" — including Korean phrasings such as "이 모델
-    어떻게 동작해?", "데이터가 어떻게 흘러가?", "텐서 형상 알려줘",
-    "워크플로우 정리해줘", "코드 구조 분석해줘". Trigger even without
-    the word "analyze" whenever the behavior of model training or
-    inference code needs to be explained.
+  Structural analysis of ML/AI model code repositories — architecture,
+  training/data pipelines, tensor shapes. Use whenever model training or
+  inference code needs explaining, even without the word "analyze":
+  "how does this model work?", "trace the data flow", "이 모델 어떻게
+  동작해?", "데이터가 어떻게 흘러가?", "코드 구조 분석해줘".
 ---
 
 # ML Repository Analyzer (ML 레포 구조 분석)

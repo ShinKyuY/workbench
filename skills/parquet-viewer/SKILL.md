@@ -1,12 +1,10 @@
 ---
 name: parquet-viewer
 description: >-
-  Launch a web-browser table viewer for Parquet files. Use when the user
-  wants to view a parquet file, open parquet, inspect data, browse a
-  table, or preview data — including Korean phrasings such as
-  "parquet 파일 보기", "parquet 열어줘", "데이터 확인", "테이블 뷰어",
-  "parquet 탐색", "데이터 미리보기". Supports a single file, a directory
-  containing multiple part files, and parquet downloaded from HDFS.
+  Launch a browser table viewer for Parquet files (single file,
+  multi-part directory, HDFS download). Use when the user wants to
+  view, inspect, or preview parquet data — "parquet 열어줘",
+  "데이터 미리보기", "테이블 뷰어".
 ---
 
 # Parquet Viewer
