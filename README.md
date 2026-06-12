@@ -9,7 +9,7 @@ Claude Code 커스텀 스킬 모음 플러그인.
 | `handoff` | 다음 세션/에이전트가 cold start로 이어받을 수 있는 HANDOFF.md 생성 |
 | `analyze-ml-repo` | ML/AI 모델 레포 구조 분석 (데이터 흐름, 텐서 형상, 학습 파이프라인) |
 | `refactor` | 코드 결함 분석 → 아키텍처 점검 → 계획 → 실행 → 검증 리팩토링 파이프라인 |
-| `md2html` | 장문 Markdown을 Mermaid/TOC 포함 단일 HTML 페이지로 변환 |
+| `md2html` | 장문 Markdown을 KaTeX 수식·네이티브 플로우 다이어그램·와이어프레임·Mermaid·TOC 포함 단일 테마 HTML로 변환 |
 | `parquet-viewer` | Parquet 파일을 브라우저 테이블 뷰어로 탐색 |
 
 ## 설치
@@ -23,9 +23,12 @@ Claude Code 커스텀 스킬 모음 플러그인.
 
 ## 업데이트
 
+```bash
+claude plugin marketplace update shinkyuy
+claude plugin update workbench@shinkyuy
 ```
-/plugin marketplace update
-```
+
+업데이트 후 새로 시작하는 세션부터 적용됩니다.
 
 ## 전역 지침 (CLAUDE.md / AGENTS.md)
 
