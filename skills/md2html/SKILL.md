@@ -1,6 +1,6 @@
 ---
 name: md2html
-description: Convert long-form Markdown (plan, spec, system design, RFC, runbook, postmortem, brainstorm, notes) into a single self-contained HTML page with Mermaid diagrams, step timelines, callouts, sidebar TOC. Claude-orange light+dark theme. English/Korean UI labels. Portable across Claude Code / Codex / Antigravity / any AI agent.
+description: Convert long-form Markdown (plans, specs, RFCs, runbooks, notes) into one self-contained themed HTML page — KaTeX math, native SVG/HTML flow diagrams (Mermaid for complex ones), wireframe mockups for UI descriptions, timelines, callouts, sidebar TOC, Korean/English UI. Portable across Claude Code / Codex / any AI agent.
 trigger: /md2html
 ---
 
@@ -20,7 +20,7 @@ Convert a verbose Markdown document into a single, self-contained HTML file that
 
 - `template.html`   — HTML skeleton with embedded CSS (Claude orange light+dark), Mermaid CDN, theme toggle, TOC sidebar, footer. Contains `{{PLACEHOLDER}}` strings and `<!-- COMMENT -->` slots. **Do NOT read this file** — its contract (placeholder list + content slots) is fully documented below, and `scripts/build.py` does the assembly. Reading 1,200 lines of CSS wastes context and tempts you to re-type it, which is the #1 source of drift and cost.
 - `components.md`  — catalog of HTML snippets you must copy verbatim (step cards, callouts, mermaid blocks, pros-cons, comparison cards, collapsibles). **Read this in full before writing content.** Do not invent CSS classes or skip the catalog.
-- `scripts/build.py` — assembler. Takes your metadata JSON + TOC fragment + content fragment, merges them into `template.html`, and verifies the result (leftover placeholders, broken anchors, mermaid syntax, emoji). You author content; it does the mechanics.
+- `scripts/build.py` — assembler. Takes your metadata JSON + TOC fragment + content fragment, merges them into `template.html`, and verifies the result (leftover placeholders, broken anchors, mermaid syntax, emoji, math delimiters, math-as-code). You author content; it does the mechanics.
 - `examples/`     — reference `<doc>.md` → `<doc>.html` pairs. Optional calibration: if unsure what good output looks like, read only the part of an example `.html` between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`.
 
 ## What you must do when invoked
@@ -57,9 +57,12 @@ Do this analysis silently in your head (or as one short summary line to the user
 - **Subtitle** — first paragraph after H1, or the document's TL;DR sentence. ≤ 200 chars.
 - **Doc type** — infer one of: `PLAN`, `SPEC`, `SYSTEM DESIGN`, `RFC`, `RUNBOOK`, `POSTMORTEM`, `BRAINSTORM`, `NOTES`. Pick the closest match based on the document's *purpose*, not its filename. Brainstorm = exploring options with rationale; Plan = ordered steps to a goal; Spec = exact behavior contract; System design = architecture + tradeoffs; RFC = proposal seeking feedback; Runbook = operational procedure; Postmortem = incident review. The uppercase code in the eyebrow stays universal; the topbar `BRAND_LABEL` localizes (Plan / 계획).
 - **Reading time** — words ÷ 250, round to nearest minute. For Korean sources whitespace word-counting undercounts badly — use characters ÷ 500 instead. Format follows the language table: `~N min read` / `~N분 소요`.
-- **Section map** — walk each H2/H3 and tag with the BEST component using §11 cheatsheet in `components.md`:
+- **Math presence** — scan for LaTeX delimiters (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`). If present, every formula goes through KaTeX (see §15 in `components.md`) — inline `$x$` becomes `\(x\)`, display `$$...$$` stays. The LaTeX body itself is copied verbatim. Math is never rendered as `<code>` or unicode approximation — that destroys subscripts and operators, and in math-heavy documents the equations ARE the content.
+- **Section map** — walk each H2/H3 and tag with the BEST component using §11 cheatsheet in `components.md`. The deciding test for visual vs text: **would the reader understand this section better by seeing it than by reading it?** Layouts, flows, state machines, schemas → visual; requirements, tradeoffs, conceptual choices → text components. A section *about* a UI is not automatically visual — "어떤 위저드를 만들까" is conceptual (text), "위저드 화면 구성은 이렇다" is visual (wireframe).
   - numbered action list → Timeline
-  - architecture/flow prose → Mermaid
+  - architecture/flow prose → Native flow component (§6b) for simple flows (linear / one fan-out, ≤ ~8 nodes); Mermaid (§6) only for complex graphs, sequence, ER, state, gantt
+  - screen/layout description → Wireframe mockup (§6c); "layout A vs B" → two mockups in `.split`
+  - LaTeX math → KaTeX (§15), display equations stay display
   - "pros/cons", "장점/단점" → Pros-Cons
   - "option A vs B" → Comparison cards. If the document records a decision, put `class="recommended"` on the chosen card (★ badge) — even when each option also lists pros/cons. The reader must see which option won without hunting through prose.
   - critical conclusion → Key-point highlight
@@ -91,8 +94,10 @@ You write three small part files; `scripts/build.py` merges them into `template.
 3. **Write `<output-dir>/.md2html-parts/content.html`** — the document body, section by section, using components from `components.md`. Each section must:
    - Start with `<h2 id="..."> ` (matching the TOC entry).
    - Use ONE primary component per logical chunk (don't stack 3 callouts in a row).
-   - Preserve original meaning — do not summarize away technical detail; condense only filler/repetition.
-4. **Run the assembler** (script path relative to this SKILL.md):
+   - Preserve original meaning — do not summarize away technical detail; condense only filler/repetition. md2html **restructures**, it does not **abridge**: a reader holding only the HTML must be able to reconstruct every claim, definition, derivation step, number, and caveat of the source. If a sentence feels "too detailed to keep", that's usually the sentence the author cared about most.
+   - Math follows §15 in `components.md`: LaTeX verbatim, inline `\(...\)`, display `$$...$$` in its own `<p>`, never inside `<code>`/`<pre>`.
+4. **Fidelity sweep** — before building, re-walk the source top-to-bottom against your `content.html` and check off: every display equation still a display equation, every inline formula still math, every table row, list item, numeric fact, file/column name, and cross-reference present. Fix gaps now — this catch-step is cheap, a thin output is a rewrite.
+5. **Run the assembler** (script path relative to this SKILL.md):
 
    ```bash
    python3 <skill-dir>/scripts/build.py \
@@ -101,7 +106,7 @@ You write three small part files; `scripts/build.py` merges them into `template.
    # short doc without a sidebar: omit --toc and add --no-toc
    ```
 
-   It substitutes placeholders, injects your fragments, then verifies: no leftover `{{PLACEHOLDER}}`, every anchor resolves to an `id`, mermaid blocks start with a supported diagram type (`flowchart`, `sequenceDiagram`, `erDiagram`, `stateDiagram-v2`, `gantt`, … — never bare `graph`), no emoji glyphs. On `BUILD FAILED`, fix the named problem in your part file and re-run. On `BUILD OK`, delete the `.md2html-parts/` directory.
+   It substitutes placeholders, injects your fragments, then verifies: no leftover `{{PLACEHOLDER}}`, every anchor resolves to an `id`, mermaid blocks start with a supported diagram type (`flowchart`, `sequenceDiagram`, `erDiagram`, `stateDiagram-v2`, `gantt`, … — never bare `graph`), no emoji glyphs, balanced math delimiters (`\(`/`\)`, even `$$` count), and no math-like unicode squeezed into `<code>` spans. On `BUILD FAILED`, fix the named problem in your part file and re-run. On `BUILD OK`, delete the `.md2html-parts/` directory.
 
    **Fallback** — if `python3` is unavailable in your environment: read `template.html`, build the full output buffer in memory (placeholders + TOC + content slot between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`), `Write` once, and run the Step 4 checks manually by re-reading your generated sections.
 
@@ -115,16 +120,17 @@ You write three small part files; `scripts/build.py` merges them into `template.
 ## Critical rules
 
 1. **Never paraphrase technical content into vague prose.** A step `0042_user_schema.sql 마이그레이션 실행` must keep that exact filename — don't change it to `새 마이그레이션 실행`.
-2. **One component per chunk.** Don't wrap a callout inside a step card inside a collapsible. Keep nesting flat.
-3. **Mermaid > prose for any flow ≥ 3 hops.** If the source says "A calls B, B calls C, C writes to the DB", make a diagram.
-4. **Key-point highlights are rare.** Max 1 per H2 section, ideally 2-3 total per document.
-5. **UI text follows the detected source language** — Korean source → Korean labels, anything else → English labels (see the table in Step 2). Code, commands, file names, library names, error messages stay verbatim regardless of language.
-6. **Self-contained output.** No external references beyond what `template.html` already ships (mermaid CDN + Google Fonts, both degrade gracefully offline). Never add more.
-7. **Do not modify `template.html`, `components.md`, or `scripts/build.py`** — those are the skill's source of truth. Only write the part files and the output `.html`.
-8. **Use SVG icons only — never emojis.** Every icon is `<svg class="..."><use href="#i-NAME"/></svg>` referencing the sprite at the top of `<body>`. See §13 in `components.md` for the catalog. No emoji glyphs anywhere in callouts, doc-meta, topbar, or body content.
-9. **Anchor links and copy-to-clipboard auto-inject via JS** — do NOT add them manually. Just give H2/H3 a proper `id`, and put code in `<pre><code>`. The template's boot script handles the rest.
-10. **Wrap wide tables in `.table-wrap`** — see components.md §14b. Tables ≥ 4 columns or with long cells need the wrapper for mobile scroll.
-11. **Use `<figure>` + `<figcaption>` for images** with descriptive `alt`. See components.md §14a.
+2. **Math renders via KaTeX — never as `<code>`/unicode approximation.** Inline `$x$` → `\(x\)`, display `$$...$$` stays display in its own `<p>`, LaTeX body verbatim (`m_{\mathrm{gap}}` stays `m_{\mathrm{gap}}`). Escape `<` `>` `&` inside math. See `components.md` §15.
+3. **One component per chunk.** Don't wrap a callout inside a step card inside a collapsible. Keep nesting flat.
+4. **Diagram > prose for any flow ≥ 3 hops** — and simple flows ship as the native flow component, not mermaid. If the source says "A calls B, B calls C, C writes to the DB", build it with §6b (theme-native HTML/SVG, KaTeX-capable labels, print-safe). Mermaid is reserved for diagrams that need a layout engine: sequence, ER, state, gantt, dense multi-branch flowcharts. Even if you sketch in mermaid first, the final HTML for a simple flow is the native component.
+5. **Key-point highlights are rare.** Max 1 per H2 section, ideally 2-3 total per document.
+6. **UI text follows the detected source language** — Korean source → Korean labels, anything else → English labels (see the table in Step 2). Code, commands, file names, library names, error messages stay verbatim regardless of language.
+7. **Self-contained output.** No external references beyond what `template.html` already ships (mermaid CDN + KaTeX CDN + Google Fonts, all degrade gracefully offline). Never add more.
+8. **Do not modify `template.html`, `components.md`, or `scripts/build.py`** — those are the skill's source of truth. Only write the part files and the output `.html`.
+9. **Use SVG icons only — never emojis.** Every icon is `<svg class="..."><use href="#i-NAME"/></svg>` referencing the sprite at the top of `<body>`. See §13 in `components.md` for the catalog. No emoji glyphs anywhere in callouts, doc-meta, topbar, or body content.
+10. **Anchor links and copy-to-clipboard auto-inject via JS** — do NOT add them manually. Just give H2/H3 a proper `id`, and put code in `<pre><code>`. The template's boot script handles the rest.
+11. **Wrap wide tables in `.table-wrap`** — see components.md §14b. Tables ≥ 4 columns or with long cells need the wrapper for mobile scroll.
+12. **Use `<figure>` + `<figcaption>` for images** with descriptive `alt`. See components.md §14a.
 
 ## Cross-AI compatibility
 
@@ -134,12 +140,12 @@ This skill is designed to run identically on:
 - **Codex CLI** — copy `SKILL.md` content to `~/.codex/prompts/md2html.md`, keep `template.html`, `components.md`, and `scripts/build.py` at a stable absolute path, update the file references in SKILL.md if needed. Invoke with `/md2html`.
 - **Antigravity** — add SKILL.md as a custom prompt/agent instruction, ensure the agent has Read/Write tool access to the skill folder.
 
-Runtime dependencies: `python3` (stdlib only) for `scripts/build.py` — available out of the box on macOS/Linux and in every major agent CLI sandbox; if it's truly missing, use the manual fallback in Step 3. The output HTML itself only needs the `mermaid` CDN, resolved at open time. No npm/pip install required.
+Runtime dependencies: `python3` (stdlib only) for `scripts/build.py` — available out of the box on macOS/Linux and in every major agent CLI sandbox; if it's truly missing, use the manual fallback in Step 3. The output HTML itself only needs the `mermaid` + KaTeX CDNs, resolved at open time. No npm/pip install required.
 
 ## Edge cases
 
 - **Source has no headings** — wrap content in one `<h2 id="content">Content</h2>` (KO: `내용`) and infer logical breaks from blank lines + topic shifts.
-- **Source has existing mermaid code blocks** — keep them, just rewrap in `<figure class="diagram">` with caption.
+- **Source has existing mermaid code blocks** — if it's a simple flowchart (linear / one fan-out, ≤ ~8 nodes), convert it to the native flow component (§6b); complex diagrams stay mermaid, rewrapped in `<figure class="diagram">` with caption.
 - **Source has HTML embedded** — pass through as-is inside `<div>` if safe, else escape.
 - **Source is very short (< 200 words, or < 400 characters for CJK)** — skip the TOC sidebar: omit `--toc` and pass `--no-toc` to `build.py` (it removes the sidebar and the mobile drawer trigger for you).
 - **Source is very long (> 5000 words)** — collapse low-priority sections by default with `<details>`.

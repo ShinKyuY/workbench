@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <style>
     /* ============================================================
        TOKENS
@@ -632,6 +633,169 @@
     }
 
     /* ============================================================
+       MATH (KaTeX)
+       ============================================================ */
+    .content .katex { font-size: 1.06em; }
+    .content .katex-display {
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 8px 2px;
+      margin: 20px 0;
+    }
+
+    /* ============================================================
+       NATIVE FLOW DIAGRAM
+       ============================================================ */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 0;
+    }
+    .flow-node {
+      background: var(--surface);
+      border: 1.5px solid var(--accent-border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+      padding: 10px 18px;
+      font-size: 14px;
+      color: var(--text);
+      text-align: center;
+      max-width: 440px;
+    }
+    .flow-node small {
+      display: block;
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--text-subtle);
+    }
+    .flow-node-accent {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .flow-arrow {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: var(--border-strong);
+    }
+    .flow-arrow::before { content: ""; width: 2px; height: 16px; background: currentColor; }
+    .flow-arrow::after {
+      content: "";
+      border: 5px solid transparent;
+      border-top-color: currentColor;
+      margin-top: -1px;
+    }
+    .flow-arrow-label {
+      position: absolute;
+      left: calc(50% + 12px);
+      top: 50%;
+      transform: translateY(-50%);
+      white-space: nowrap;
+      font-size: 12px;
+      color: var(--text-subtle);
+    }
+    .flow-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+    .flow-lr { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+    .flow-lr .flow-arrow { flex-direction: row; }
+    .flow-lr .flow-arrow::before { width: 16px; height: 2px; }
+    .flow-lr .flow-arrow::after {
+      border: 5px solid transparent;
+      border-left-color: currentColor;
+      margin: 0 0 0 -1px;
+    }
+    .flow-lr .flow-arrow-label {
+      left: 50%;
+      top: auto;
+      bottom: calc(50% + 8px);
+      transform: translateX(-50%);
+    }
+
+    /* ============================================================
+       WIREFRAME MOCKUP
+       ============================================================ */
+    .mockup {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin: 24px 0;
+    }
+    .mockup-header {
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-subtle);
+    }
+    .mockup-body { padding: 18px; font-size: 13px; }
+    .mock-nav {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      font-size: 13px;
+    }
+    .mock-row { display: flex; }
+    .mock-sidebar {
+      background: var(--surface-2);
+      padding: 14px;
+      min-width: 150px;
+      font-size: 13px;
+    }
+    .mock-sidebar ul { list-style: none; padding: 0; margin: 0; }
+    .mock-sidebar li { padding: 6px 8px; border-radius: 6px; }
+    .mock-sidebar li.active { background: var(--accent-soft); color: var(--accent-strong); }
+    .mock-content { flex: 1; padding: 16px; font-size: 13px; }
+    .mock-button {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 13px;
+    }
+    .mock-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      width: 100%;
+      font-size: 13px;
+      color: var(--text-subtle);
+    }
+    .placeholder {
+      background: repeating-linear-gradient(45deg,
+        var(--surface-2), var(--surface-2) 8px, var(--surface-3) 8px, var(--surface-3) 16px);
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-sm);
+      padding: 24px 16px;
+      text-align: center;
+      color: var(--text-subtle);
+      font-size: 13px;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .split .mockup { margin: 0; }
+    @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
+
+    /* ============================================================
        PROS / CONS
        ============================================================ */
     .proscons {
@@ -1024,6 +1188,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <script>
     // ---------- Theme ----------
     const STORAGE_KEY = "md2html-theme";
@@ -1043,8 +1209,9 @@
       const isDark = currentTheme() === "dark";
       mermaid.initialize({
         startOnLoad: false,
-        theme: isDark ? "dark" : "default",
+        theme: "base", // custom themeVariables are only honored with the "base" theme
         themeVariables: {
+          darkMode: isDark,
           primaryColor: isDark ? "#3A2A22" : "#FBEEE6",
           primaryTextColor: isDark ? "#F5F0E8" : "#1A1A1A",
           primaryBorderColor: isDark ? "#E89572" : "#D97757",
@@ -1071,6 +1238,22 @@
       localStorage.setItem(STORAGE_KEY, next);
       applyThemeIcon();
       renderMermaid();
+    }
+
+    // ---------- Math (KaTeX) ----------
+    // Inline math: \( ... \)   Display math: $$ ... $$ or \[ ... \]
+    // Single-$ is intentionally NOT a delimiter (literal dollar amounts stay safe).
+    // KaTeX auto-render skips <pre>/<code>, so code blocks and mermaid are untouched.
+    function renderMath() {
+      if (typeof renderMathInElement !== "function") return; // CDN unavailable → raw LaTeX degrades gracefully
+      renderMathInElement(document.querySelector(".content") || document.body, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "\\[", right: "\\]", display: true },
+          { left: "\\(", right: "\\)", display: false },
+        ],
+        throwOnError: false,
+      });
     }
 
     // ---------- TOC drawer (mobile) ----------
@@ -1178,6 +1361,7 @@
       applyThemeIcon();
       injectAnchors();
       injectCopyButtons();
+      renderMath();
       renderMermaid();
       setupTocSpy();
       setupScrollProgress();
