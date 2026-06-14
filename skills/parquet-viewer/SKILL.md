@@ -13,14 +13,28 @@ Serves a Parquet file through a local web server for browsing in the
 browser. The script lives at `scripts/parquet_viewer.py` in this skill
 directory.
 
+## Compatibility
+
+Requires `python3`, `pandas`, and `pyarrow`.
+
+```bash
+python3 -c "import pandas, pyarrow"
+```
+
+If either package is missing, install it in the active project or
+virtual environment before launching the viewer. Do not bake a global
+install into the skill.
+
 ## How to run (important)
 
 The server keeps running in the foreground, so **always run it in the
 background**. A normal run blocks the shell, and the server dies on
 timeout.
 
-1. Run with the Bash tool's `run_in_background: true`.
-2. Find the `READY http://localhost:<port>` line in the output.
+1. Run with the available background/session mechanism. In Claude Code,
+   use Bash `run_in_background: true`; in Codex, start it as a
+   long-running exec session and keep the session id.
+2. Find the `READY http://<host>:<port>` line in the output.
    (If the port is taken, the script probes the next one automatically,
    so the actual port may differ from the requested one — always check
    the URL on the READY line.)
@@ -28,7 +42,7 @@ timeout.
    default.
 
 ```bash
-# background run (run_in_background: true)
+# background/session run
 python3 <skill-dir>/scripts/parquet_viewer.py data.parquet
 ```
 
@@ -36,8 +50,12 @@ python3 <skill-dir>/scripts/parquet_viewer.py data.parquet
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--port`, `-p` | Starting port (probes +1 at a time if in use) | `8765` |
+| `--host` | Bind host. Keep local unless sharing is intentional | `127.0.0.1` |
 | `--rows`, `-n` | Read only the first N rows — fast, no full load | all |
 | `--no-open` | Disable auto-opening the browser | auto-open |
+
+The viewer binds to `127.0.0.1` by default. Use `--host 0.0.0.0` only
+when the user explicitly needs access from another machine or container.
 
 ## Large files
 

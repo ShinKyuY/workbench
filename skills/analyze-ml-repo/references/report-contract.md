@@ -20,7 +20,9 @@ instructions.
   and docs conflict, the code is right — and record the conflict.
 - Abstract descriptions like "x is the input tensor" are
   insufficient. Concrete values like `img: [3, 224, 224], float32`
-  are required.
+  are required when they can be confirmed. Mark values as
+  `confirmed`, `inferred`, or `unavailable`; never invent examples to
+  make a section look complete.
 - Do not modify any code. Analysis agents are read-only.
 
 ## Status header (at the very top of the report)
@@ -60,6 +62,7 @@ Check yourself right before reporting; fix what fails, then submit:
 2. Did I state the input-boundary and output-boundary shapes of my
    scope? (The orchestrator cross-checks them against other agents'
    results.)
-3. Are the examples real values confirmed in code, not placeholders?
+3. Are examples labeled honestly as confirmed/inferred/unavailable,
+   with no placeholders presented as real data?
 4. Is everything I could not confirm listed under
    "unverified/assumed items"?

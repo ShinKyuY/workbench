@@ -1,22 +1,23 @@
 ---
 name: define-goal
 description: >-
-  Turn a fuzzy intention into a concrete, measurable, verifiable goal —
-  success criteria, evidence, scope, stop condition — before work. Use
-  when the user wants to define / set / clarify a goal, success criteria,
-  or "definition of done", or to sharpen a vague ask ("make X faster",
-  "목표 정의", "성공 기준", "되게 만들어줘"). Definition only; skip work
-  that already has a clear outcome.
+  Use when the user wants to define, set, or clarify a goal, success
+  criteria, or "definition of done", or to sharpen a vague ask
+  ("make X faster", "목표 정의", "성공 기준", "되게 만들어줘") before
+  starting work. Turns it into a concrete, verifiable objective —
+  measurable or reviewable, with evidence and bounded scope; definition
+  only, skip asks that already have a clear outcome.
 ---
 
 # Define Goal — 목표 정의 스킬
 
 Shape the user's intent into an objective an agent can pursue **honestly**
 and **prove it finished** (정직하게 추구하고 끝났음을 증명할 수 있는 목표).
-Prefer measurable outcomes, explicit evidence, and bounded scope over
+Prefer observable outcomes, explicit evidence, and bounded scope over
 activity: a goal naming only *activity* ("keep improving", "되게 해줘")
 gives no way to know it's done, so the agent stops too early or grinds
-forever.
+forever. Numbers are useful, but reviewable artifacts with a clear
+rubric can be just as verifiable.
 
 ## Workflow
 
@@ -32,16 +33,20 @@ forever.
    - what is **in scope vs. out (non-goals)**, when ambiguity matters
    - the **stop condition** for asking instead of grinding
 
-3. **Make it quantitative — usually multidimensional.** Good criteria are
-   *Specific, Measurable, Achievable, Relevant*: a real number tied to a
-   benchmark or baseline, not an adjective. Even "hazy" goals quantify —
-   "safe output" → "< 0.1% of 10k outputs flagged". Most need **several
-   thresholds at once** (correctness *and* latency *and* no new failures).
-   Draw from: pass/fail validators (tests, checks, evals, commands);
-   quality thresholds (latency, error rate, accuracy, coverage, cost,
-   memory…); artifact constraints (paths, modules, formats, environments,
-   deadlines, blast radius); evidence counts (reproduced failures, reruns,
-   reviewed examples, migrated records).
+3. **Make success observable — quantitative when it fits.** Good
+   criteria are *Specific, Measurable or Reviewable, Achievable,
+   Relevant*: a real number tied to a benchmark/baseline, a binary
+   validator, or a rubric that two reviewers can apply the same way.
+   Even "hazy" goals often quantify — "safe output" → "< 0.1% of 10k
+   outputs flagged" — but subjective artifacts may be better verified by
+   reviewed examples, acceptance notes, or an explicit quality checklist.
+   Most need **several thresholds at once** (correctness *and* latency
+   *and* no new failures). Draw from: pass/fail validators (tests,
+   checks, evals, commands); quality thresholds (latency, error rate,
+   accuracy, coverage, cost, memory…); artifact constraints (paths,
+   modules, formats, environments, deadlines, blast radius); evidence
+   counts (reproduced failures, reruns, reviewed examples, migrated
+   records).
 
 4. **Make it verifiable, not just numeric.**
    - **Inter-rater test** (상호평가): two reviewers reading the goal reach
@@ -64,7 +69,7 @@ forever.
      evidence** (sources, logs, run IDs), not just asserted.
 
 6. **Repair or clarify weak goals before finalizing.**
-   - Rewrite a vague goal into a measurable one when context makes it safe.
+   - Rewrite a vague goal into an observable one when context makes it safe.
    - Reject pure activity goals ("make progress", "keep investigating",
      "되게 만들어줘") until sharpened.
    - Ask **one** question only when a safe rewrite would risk the wrong
@@ -85,7 +90,8 @@ The finished objective should answer:
 
 - What concrete thing will be **true** when done?
 - What **evidence** proves it (could a second reviewer agree)?
-- What quantitative or binary **threshold** defines success?
+- What quantitative, binary, or rubric-based **threshold** defines
+  success?
 - What **scope / non-goals** matter?
 - What should make the agent **stop and ask** instead of grinding?
 - Could the stated check be **gamed** without the real outcome?
@@ -148,6 +154,8 @@ check fails, repair before moving on.
   API unchanged unless in scope, plus the before/after quality metric.
 - **Quality work**: an observable bar — reviewed examples, lint/typecheck/
   test pass, or a user-approved artifact.
+- **Subjective artifacts**: a small review rubric, representative
+  examples, and an explicit approval/evidence path.
 - **Research**: the decision it must enable, sources in scope, evidence
   standard (claims tied to citable sources).
 - **Operations**: healthy state, monitoring window, failure threshold,

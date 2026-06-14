@@ -10,8 +10,9 @@ description: >-
 
 # ML Repository Analyzer (ML 레포 구조 분석)
 
-Analyzes an ML/AI model repository with a team of specialized
-subagents and produces a structured analysis document.
+Analyzes an ML/AI model repository with the smallest workflow that fits
+the request: answer narrow questions directly, or use specialized
+subagents and produce a structured markdown document for broad analysis.
 
 Write the final analysis document and the chat summary in the
 language of the conversation (Korean session → Korean document).
@@ -22,17 +23,28 @@ the same regardless of language.
 
 1. **Code first, docs second**: read the source code first;
    docs/README are supplements.
-2. **Concrete examples required**: include real data examples,
+2. **Concrete examples required**: include confirmed data examples,
    tensor shapes, and code line references instead of abstract
-   descriptions.
+   descriptions. If a value is inferred from schema/code rather than
+   observed in data, label it as inferred; if unavailable, say so.
 3. **Dispatch only the subagents needed**: pick the roles that match
    the request scope, scale the instance count to the targets found
    in the repo (Step 2), and dispatch them concurrently.
 4. **Orchestrator role**: the main agent synthesizes subagent
    results, fills the gaps, and assembles the final document.
-5. **Deliverables as files**: save the final document as markdown and
-   convert it to HTML with the md2html skill. Present only a summary
-   in chat.
+5. **Deliverables match scope**: for narrow questions, answer in chat
+   with file:line evidence. For broad analysis, save a markdown
+   document and present only a summary plus the `.md` path in chat.
+
+## Output mode routing (출력 방식 라우팅)
+
+- **Quick answer**: single-file questions, "what does this model do?",
+  or a specific shape/flow question. Do Step 1 reconnaissance, read the
+  directly relevant files, answer in chat, and skip subagents/files
+  unless the user asks for a document.
+- **Full document**: whole-repo structure, end-to-end workflow, or
+  multiple pipeline areas. Run the dispatch plan and save the final
+  markdown document.
 
 ---
 
@@ -44,12 +56,14 @@ search scope.
 
 Do directly:
 ```
-1. Map the project tree with Glob:
+1. Map the project tree with the available file-search tool
+   (prefer `rg --files`; Claude `Glob` is also fine):
    - **/*.py (main Python files)
    - **/config*.json, **/config*.yaml (config files)
    - **/*.md (docs)
 
-2. Search key patterns with Grep:
+2. Search key patterns with the available text-search tool
+   (prefer `rg`; Claude `Grep` is also fine):
    - "class.*Dataset" -> dataset file locations
    - "class.*Model\b|class.*Net\b|class.*Module" -> model files
    - "def forward" -> forward pass locations
@@ -66,9 +80,10 @@ Do directly:
 
 4. Fix the analysis scope:
    - If the repo contains multiple independent model families or
-     subprojects (monorepo), ask the user with AskUserQuestion which
-     part to analyze. A full analysis costs several times the
-     time/tokens, so narrowing the scope first is better.
+     subprojects (monorepo), ask the user which part to analyze using
+     the available question mechanism (plain chat, `request_user_input`,
+     or Claude `AskUserQuestion`). A full analysis costs several times
+     the time/tokens, so narrowing the scope first is better.
    - In an environment where the user cannot respond
      (background/headless run), pick the part that the entry points
      and the request context indicate is most central, and state the
@@ -130,8 +145,8 @@ Agent budget (예산) — these are full readers, not cheap verifiers:
   a target silently: either **group related targets** under one
   instance (one agent covers two small models) and record the
   grouping in the final document's assumptions, or — when the
-  overflow is large — go back to the user via AskUserQuestion to
-  narrow the scope.
+  overflow is large — go back to the user through the available
+  question mechanism to narrow the scope.
 
 Worked example: request "analyze the whole structure"; recon found
 independent models `interformer`/`wukong`, one shared dataset
@@ -236,7 +251,7 @@ When all subagent results are back:
 
 ---
 
-## Step 5: Assemble the final document → HTML (문서 조립·변환)
+## Step 5: Assemble the final markdown document (문서 조립)
 
 ### 5-1. Assemble the markdown document
 
@@ -279,17 +294,15 @@ structure itself stays fixed.
 (when there are multiple models)
 ```
 
-### 5-2. Save and convert to HTML
+### 5-2. Save and report
 
 1. Save the assembled document as a `.md` file. If the user did not
    specify a path, save to `docs/analysis/<topic>.md` in the
    analyzed repo (create the directory if missing).
-2. **Invoke the md2html skill** to convert the saved `.md` to HTML.
-   Mermaid diagrams, tables, and code blocks render natively. Do not
-   hand-write HTML conversion logic.
-3. In chat, present only the key summary (end-to-end workflow plus a
-   few main findings) and the `.md`/`.html` file paths. Do not paste
-   the full document back into the chat.
+2. In chat, present only the key summary (end-to-end workflow plus a
+   few main findings) and the `.md` file path. Do not paste the full
+   document back into the chat.
+3. Create additional formats only when the user explicitly asks.
 
 ---
 

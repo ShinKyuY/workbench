@@ -88,7 +88,7 @@ the orchestrator (main conversation) performs:
 
 ### Rename
 1. Decide the new name
-2. Find all references (use Grep)
+2. Find all references (`grep`, `rg` or the available text-search tool)
 3. Change them all
 4. Test
 
