@@ -346,11 +346,11 @@ def make_handler(df, parquet_path, source_rows):
     return Handler
 
 
-def bind_server(handler, start_port):
+def bind_server(handler, start_port, host):
     """Find a free port starting at start_port and bind the server."""
     for port in range(start_port, start_port + PORT_TRIES):
         try:
-            return HTTPServer(("", port), handler), port
+            return HTTPServer((host, port), handler), port
         except OSError:
             print(
                 f"Port {port} in use, trying {port + 1}",
@@ -375,6 +375,10 @@ def main():
         help="server port (probes the next port if in use)",
     )
     parser.add_argument(
+        "--host", default="127.0.0.1",
+        help="server bind host",
+    )
+    parser.add_argument(
         "-n", "--rows", type=int, default=None,
         help="max rows to load (reads only the first N rows)",
     )
@@ -386,9 +390,12 @@ def main():
 
     df, source_rows = load_data(args.file, args.rows)
     handler = make_handler(df, args.file, source_rows)
-    server, port = bind_server(handler, args.port)
+    server, port = bind_server(handler, args.port, args.host)
 
-    url = f"http://localhost:{port}"
+    display_host = (
+        "127.0.0.1" if args.host in ("", "0.0.0.0") else args.host
+    )
+    url = f"http://{display_host}:{port}"
     print(f"READY {url}", flush=True)
 
     if not args.no_open:

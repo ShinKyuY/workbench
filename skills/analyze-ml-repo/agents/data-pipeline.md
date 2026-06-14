@@ -45,8 +45,11 @@ architecture:
 
 ### 5. Concrete data examples
 
-Write examples with real values inferred from the code:
-- One raw data sample (with actual values)
+Write examples with values confirmed from data or tests when available.
+If only schema/config/code is available, label the example as inferred.
+If no honest example can be derived, write `unavailable` and explain
+what file or command would be needed:
+- One raw data sample
 - One Dataset output sample
 - One post-collate batch tensor example
 

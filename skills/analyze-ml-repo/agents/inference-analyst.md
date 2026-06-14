@@ -46,7 +46,10 @@ Common reporting rules (report format, status header,
 unverified/assumed items, self-review) follow the report contract
 delivered with this prompt. In addition:
 
-- The output-schema sample must contain concrete values.
+- The output-schema sample must contain concrete values confirmed from
+  data/tests/logs when available. If only code/schema is available,
+  label the values as inferred; if no honest sample can be derived,
+  write `unavailable` and name what evidence is missing.
 - Always state the list of keys read by the model/checkpoint load
   code — this is the boundary cross-checked against the training
   checkpoint structure.

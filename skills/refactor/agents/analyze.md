@@ -58,9 +58,10 @@ cases near a threshold.
   separate variable/field, creating a synchronization burden
 
 **Reuse**
-- Re-implementation of utilities the project already has — Grep
-  shared/util modules and files adjacent to the target for an existing
-  helper with the same role; if found, name the helper to use instead
+- Re-implementation of utilities the project already has — search
+  shared/util modules and files adjacent to the target (`rg` or the
+  available text-search tool) for an existing helper with the same
+  role; if found, name the helper to use instead
 
 **Conditionals**
 - Conditionals nested 3+ levels deep

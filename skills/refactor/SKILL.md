@@ -1,12 +1,11 @@
 ---
 name: refactor
 description: >-
-  Code refactoring and architecture review via a subagent pipeline:
-  defect signs, SOLID/coupling/cohesion checks, planning, safe
-  step-by-step execution, verification. Use when the goal is structural
-  quality of existing code — refactoring, cleanup, code smells,
-  deduplication, architecture review, "이 코드 좀 깔끔하게", "구조
-  개선해줘", "의존성이 꼬여있어" — not bug fixes or new features.
+  Use when the goal is the structural quality of existing code —
+  refactoring, cleanup, code smells, deduplication, or architecture
+  review ("이 코드 좀 깔끔하게", "구조 개선해줘", "의존성이 꼬여있어").
+  For improving the structure of working code, not fixing bugs or
+  adding features.
 ---
 
 # Refactor — Code Refactoring Skill (코드 리팩토링 스킬)
@@ -25,7 +24,7 @@ cost in itself; too little leads to behavior-change accidents.
 
 | Size | Example | Approach |
 |------|---------|----------|
-| **Small** (소규모) | 1–2 functions, part of one file | Run Phase 1 inline, quickly (skip Phase 2). Report the analysis summary + a 3–5 line plan at once, then execute → verify after confirmation |
+| **Small** (소규모) | 1–2 functions, part of one file | Run Phase 1 inline, quickly (skip Phase 2). Share the analysis summary + a 3–5 line plan, then execute → verify unless an approval gate below applies |
 | **Medium** (중규모) | 1–3 files | Full pipeline, with subagents |
 | **Large** (대규모) | Module/package level | Full pipeline + architecture review required. Shard Phase 1 into scoped agents (see "Dynamic fan-out"). Per-phase user agreement, propose splitting into multiple PRs |
 
@@ -245,10 +244,12 @@ Each Step must be an **independently committable unit**. If one Step
 fails, the previous Steps must remain valid — that is what makes
 per-step rollback work.
 
-**Checkpoint ②**: report the plan and risks to the user and get
-confirmation. For small sizes, checkpoints ① and ② may be combined.
-However, **if a public API change is included, explicit approval is
-mandatory regardless of size**.
+**Checkpoint ②**: report the plan and risks to the user before Phase 4.
+For small sizes, checkpoints ① and ② may be combined. Explicit approval
+is mandatory when a public API change is included, one Step touches 5+
+files, tests are missing or red, or the user asked for review/approval
+before execution. For large work, prefer confirmation before Phase 4
+even when none of those gates apply.
 
 ---
 

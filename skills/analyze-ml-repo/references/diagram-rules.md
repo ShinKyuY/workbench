@@ -1,11 +1,9 @@
 # Diagram Rules (다이어그램 규칙)
 
-The final document must include the diagrams below. Complex ML
-pipelines are hard to understand from prose alone, so the diagrams
-are a core deliverable.
-
-The final document is converted to HTML with the md2html skill, so
-write in formats that render natively in HTML:
+The final markdown document must include the diagrams below. Complex
+ML pipelines are hard to understand from prose alone, so the diagrams
+are a core deliverable. Use formats that render well in common
+markdown viewers:
 
 | Content | Format |
 |---------|--------|
@@ -13,8 +11,8 @@ write in formats that render natively in HTML:
 | Shape transitions, model comparison | markdown table |
 | Directory trees, attention-mask grids | code block |
 
-Do not use ASCII box diagrams — after HTML conversion they read
-worse than Mermaid and tables.
+Do not use ASCII box diagrams — in rendered markdown they read worse
+than Mermaid and tables.
 
 ---
 
@@ -33,8 +31,8 @@ worse than Mermaid and tables.
 ## Mermaid rules
 
 - State the direction: `flowchart TD` or `flowchart LR`. A bare
-  `graph` with no direction is forbidden (md2html validation rejects
-  it).
+  `graph` with no direction is forbidden because many renderers reject
+  it or lay it out unpredictably.
 - If a node label contains square brackets like `[B, N, D]`, wrap
   the whole label in double quotes: `A["x [B, 3, 224, 224]"]`.
   Without quoting, Mermaid fails to parse.

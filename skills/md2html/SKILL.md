@@ -1,12 +1,14 @@
 ---
 name: md2html
-description: Convert long-form Markdown (plans, specs, RFCs, runbooks, notes) into one self-contained themed HTML page — KaTeX math, native SVG/HTML flow diagrams (Mermaid for complex ones), wireframe mockups for UI descriptions, timelines, callouts, sidebar TOC, Korean/English UI. Portable across Claude Code / Codex / any AI agent.
+description: Use when turning long-form Markdown (plans, specs, RFCs, runbooks, notes) into one themed HTML file to read or share — KaTeX math, native SVG/HTML flow diagrams (Mermaid for complex ones), wireframe mockups for UI descriptions, timelines, callouts, sidebar TOC, Korean/English UI. Portable across Claude Code / Codex / any AI agent.
 trigger: /md2html
 ---
 
 # /md2html
 
-Convert a verbose Markdown document into a single, self-contained HTML file that a tired human can actually scan: diagrams instead of paragraphs, step cards instead of numbered lists, callouts for the parts that matter.
+Convert a verbose Markdown document into a single HTML file that a tired
+human can actually scan: diagrams instead of paragraphs, step cards
+instead of numbered lists, callouts for the parts that matter.
 
 ## Usage
 
@@ -125,7 +127,9 @@ You write three small part files; `scripts/build.py` merges them into `template.
 4. **Diagram > prose for any flow ≥ 3 hops** — and simple flows ship as the native flow component, not mermaid. If the source says "A calls B, B calls C, C writes to the DB", build it with §6b (theme-native HTML/SVG, KaTeX-capable labels, print-safe). Mermaid is reserved for diagrams that need a layout engine: sequence, ER, state, gantt, dense multi-branch flowcharts. Even if you sketch in mermaid first, the final HTML for a simple flow is the native component.
 5. **Key-point highlights are rare.** Max 1 per H2 section, ideally 2-3 total per document.
 6. **UI text follows the detected source language** — Korean source → Korean labels, anything else → English labels (see the table in Step 2). Code, commands, file names, library names, error messages stay verbatim regardless of language.
-7. **Self-contained output.** No external references beyond what `template.html` already ships (mermaid CDN + KaTeX CDN + Google Fonts, all degrade gracefully offline). Never add more.
+7. **Single-file output with known CDN hooks.** No external references
+   beyond what `template.html` already ships (Mermaid CDN + KaTeX CDN +
+   Google Fonts, all degrade gracefully offline). Never add more.
 8. **Do not modify `template.html`, `components.md`, or `scripts/build.py`** — those are the skill's source of truth. Only write the part files and the output `.html`.
 9. **Use SVG icons only — never emojis.** Every icon is `<svg class="..."><use href="#i-NAME"/></svg>` referencing the sprite at the top of `<body>`. See §13 in `components.md` for the catalog. No emoji glyphs anywhere in callouts, doc-meta, topbar, or body content.
 10. **Anchor links and copy-to-clipboard auto-inject via JS** — do NOT add them manually. Just give H2/H3 a proper `id`, and put code in `<pre><code>`. The template's boot script handles the rest.
@@ -140,7 +144,12 @@ This skill is designed to run identically on:
 - **Codex CLI** — copy `SKILL.md` content to `~/.codex/prompts/md2html.md`, keep `template.html`, `components.md`, and `scripts/build.py` at a stable absolute path, update the file references in SKILL.md if needed. Invoke with `/md2html`.
 - **Antigravity** — add SKILL.md as a custom prompt/agent instruction, ensure the agent has Read/Write tool access to the skill folder.
 
-Runtime dependencies: `python3` (stdlib only) for `scripts/build.py` — available out of the box on macOS/Linux and in every major agent CLI sandbox; if it's truly missing, use the manual fallback in Step 3. The output HTML itself only needs the `mermaid` + KaTeX CDNs, resolved at open time. No npm/pip install required.
+Runtime dependencies: `python3` (stdlib only) for `scripts/build.py` —
+available out of the box on macOS/Linux and in every major agent CLI
+sandbox; if it's truly missing, use the manual fallback in Step 3. The
+output is one HTML file; Mermaid, KaTeX, and Google Fonts resolve from
+the CDNs already declared in `template.html` when network is available
+and degrade gracefully when it is not. No npm/pip install required.
 
 ## Edge cases
 
