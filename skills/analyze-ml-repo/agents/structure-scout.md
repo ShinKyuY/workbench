@@ -19,7 +19,8 @@ Read `__main__.py` or the entry-point files:
 
 ### 3. Catalog the config files
 
-Read the config files in full:
+Start from the reconnaissance config summary in your prompt; read the
+config files only to fill gaps, not from scratch. Produce:
 - All hyperparameters and their defaults, as a table
 - Grouped by category (model, training, data, ...)
 
@@ -32,10 +33,13 @@ Read the config files in full:
 ### 5. End-to-end pipeline flowchart
 
 Draw the full flow — data preparation -> training -> inference ->
-output — as a Mermaid flowchart.
+output — as a Mermaid flowchart. **You own the whole-system
+top-level diagram** (the final document's "End-to-end workflow"
+section). The inference-analyst draws only the inference-only
+sub-pipeline; do not overlap.
 
-Follow rule D1 (end-to-end pipeline) in
-`references/diagram-rules.md` when drawing diagrams.
+Follow rule D1 (end-to-end pipeline) from the diagram rules included
+in your prompt when drawing diagrams.
 
 ## Output rules
 

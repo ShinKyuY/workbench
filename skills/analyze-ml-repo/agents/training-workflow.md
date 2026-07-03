@@ -33,8 +33,8 @@ training, and checkpoints. Research only — never modifies code.
 - Save cadence (per epoch, per step)
 - What state is saved (model, optimizer, scheduler, ...)
 
-Follow rule D6 (checkpoint/output directory structure) in
-`references/diagram-rules.md` when drawing diagrams.
+Follow rule D6 (checkpoint/output directory structure) from the
+diagram rules included in your prompt when drawing diagrams.
 
 ### 5. Evaluation
 

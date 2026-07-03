@@ -125,9 +125,11 @@ def main():
     out.write_text(html, encoding="utf-8")
     flows = len(re.findall(r'<div class="flow[\s"]', content))
     mockups = len(re.findall(r'<div class="mockup"', content))
+    mermaids = html.count('class="mermaid"')
+    inline_math = content.count("\\(")
     print(f"BUILD OK: {out} ({len(html.splitlines())} lines, {len(anchors)} anchors verified, "
-          f"{flows} native flows, {mockups} wireframes, {html.count('class=\"mermaid\"')} mermaid blocks, "
-          f"{content.count('$$') // 2} display + {content.count(chr(92) + '(')} inline math, "
+          f"{flows} native flows, {mockups} wireframes, {mermaids} mermaid blocks, "
+          f"{content.count('$$') // 2} display + {inline_math} inline math, "
           f"no leftover placeholders)")
 
 

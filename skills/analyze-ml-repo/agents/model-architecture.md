@@ -34,6 +34,11 @@ x [B, T, D] -> LSTM(D, H, num_layers=2) -> output [B, T, H]
 - Always mark reshape/transpose/permute/view points.
 - State skip connections and residual paths.
 
+When a shape is not obvious from the code (runtime-decided dims,
+`einops`/`rearrange`, `view(-1)`, broadcasting), use the tactics in
+the shape-tracing rules included in your prompt
+(`references/shape-tracing.md`) instead of guessing.
+
 ### 3. Core block analysis
 
 Discover the architecture patterns the model uses and analyze them
@@ -72,7 +77,7 @@ If the model has multiple modes (train/eval) or tasks
 Render the full forward pass as a Mermaid block diagram.
 
 Follow rules D3 (forward pass) and D4 (structural pattern
-visualization) in `references/diagram-rules.md`.
+visualization) from the diagram rules included in your prompt.
 
 ## Output rules
 
@@ -80,8 +85,11 @@ Common reporting rules (report format, status header,
 unverified/assumed items, self-review) follow the report contract
 delivered with this prompt. In addition:
 
-- If there are multiple models, analyze each one separately and add
-  a comparison table.
+- When your prompt scopes you to a **single model**, analyze only
+  that model and do **not** build a cross-model comparison table —
+  the orchestrator merges the per-model instances and writes the
+  comparison. Only when one prompt hands you multiple models do you
+  analyze each separately and add the comparison table yourself.
 - Always state the forward input tensors (keys/shapes/dtypes) and
   output tensor shapes — these are the boundaries cross-checked
   against the data pipeline and the loss.

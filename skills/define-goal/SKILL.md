@@ -160,15 +160,17 @@ check fails, repair before moving on.
 
 ## Plan/spec for complex goals (복잡한 목표는 계획을 먼저)
 
-When milestones span multiple sessions, modules, or unknowns (rough
-signal: 3+ milestones or several systems touched), bake a plan-first
-requirement into the goal: the executor **writes `plan.md` before
+When the work is expected to span multiple sessions, touch several
+modules or systems, or carry unknowns that need investigation — signals
+readable *before* any plan exists — bake a plan-first requirement into
+the goal: the executor **writes `plan.md` before
 implementing**, **checks it covers every "Done when" item**, and
 **updates it at each milestone boundary**. The goal stays frozen; the
 plan is the living document — a plan change that would alter the goal's
 outcome, thresholds, or scope is a Stop & ask, not a plan update.
 Without this, long work re-derives each step's approach from scratch
-and drifts.
+and drifts. The "spec" half is not a separate file: interface and
+contract decisions live pinned in the plan's `Decisions:` section.
 
 Read [references/plan-spec.md](references/plan-spec.md) when defining a
 complex goal — the full standard (zero-context, no placeholders,
@@ -177,7 +179,10 @@ it, or copy its template into the goal if the executor can't reach this
 skill's files.
 
 Small goals: inline milestones in the frozen-goal block are enough — a
-plan file for a one-loop fix is friction, not safety.
+plan file for a one-loop fix is friction, not safety. When it's unclear
+which side the goal falls on, start with inline milestones and have the
+goal say to promote them to `plan.md` if the work crosses into a second
+session.
 
 ## Quantification Heuristics (작업 유형별 검증 힌트)
 

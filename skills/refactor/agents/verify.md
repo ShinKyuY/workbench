@@ -15,7 +15,9 @@ Confirms the refactoring preserved behavior and improved quality.
 - Compare test results before/after the refactoring
 - If any test newly fails:
   → a behavior change happened; find the cause
-  → request a fix through the Execute flow, or propose rollback
+  → report it to the orchestrator (main conversation) and recommend
+    either a fix through the Execute flow or a rollback — the decision
+    and any user confirmation happen there, not here
 
 ### 2. Quality metrics (Before/After)
 
@@ -46,7 +48,8 @@ If the project has a linter/formatter configured:
 
 ### 5. Final report
 
-Report in this format:
+Return this report to the orchestrator (main conversation), which
+presents it to the user at Checkpoint ③. Format:
 
 ```
 ## Refactoring results
@@ -73,6 +76,12 @@ Report in this format:
 
 ## Output
 
-Show the final report to the user.
+Return the final report to the orchestrator (main conversation).
 Success = all tests pass and the quality metrics improved.
-Otherwise, present the problems and recommended actions.
+Otherwise, report the problems and recommended actions.
+
+End the report with a status line —
+`DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED` plus one line of
+reason. Use DONE_WITH_CONCERNS when tests pass but a metric regressed or
+a scope deviation was found; BLOCKED when the test suite cannot run and
+behavior preservation therefore cannot be confirmed.

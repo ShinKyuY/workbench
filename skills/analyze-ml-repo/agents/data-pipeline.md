@@ -53,8 +53,11 @@ what file or command would be needed:
 - One Dataset output sample
 - One post-collate batch tensor example
 
-Follow rule D2 (data shape transition table) in
-`references/diagram-rules.md` for the shape summary.
+Follow rule D2 (data shape transition table) from the diagram rules
+included in your prompt for the shape summary. When a batch shape is
+not obvious from the code (dynamic padding, `collate` reshaping,
+runtime dims), use the shape-tracing rules included in your prompt
+(`references/shape-tracing.md`) instead of guessing.
 
 ## Output rules
 
@@ -62,7 +65,10 @@ Common reporting rules (report format, status header,
 unverified/assumed items, self-review) follow the report contract
 delivered with this prompt. In addition:
 
-- If there are multiple datasets, analyze each one separately.
+- When your prompt scopes you to a **single dataset pipeline**,
+  analyze only that one. If one prompt hands you multiple datasets,
+  analyze each separately; the orchestrator merges instances that
+  were fanned out across pipelines.
 - Always state the keys/shapes/dtypes of the post-collate batch
   tensors — this is the output boundary that gets cross-checked
   against the model input.
