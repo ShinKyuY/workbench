@@ -1,140 +1,144 @@
 # CLAUDE.md
 
-이 파일은 Claude Code(claude.ai/code)에게 전역 지침을 제공한다.
-프로젝트별 `CLAUDE.md`와 충돌하면 **프로젝트 지침이 우선**한다.
+This file provides global guidance to Claude Code (claude.ai/code).
+When it conflicts with a project-level `CLAUDE.md`, **project instructions win**.
 
-**기본 트레이드오프:** 속도보다 신중함을 택한다. 사소한 작업에는 판단으로 생략해도 좋다.
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
-## 언어
+## Language
 
-항상 한국어로 답변한다.
+Always respond in Korean.
 
-## 1. 코딩 전에 생각한다
+## 1. Think Before Coding
 
-**가정하지 말고, 혼란을 숨기지 말고, 트레이드오프를 드러낸다.**
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
 
-구현 전에:
-- 가정은 `가정:`으로 명시한다. 모호하면 멈추고, 쟁점을 이름 붙여
-  묻는다(객관식이 적합하면 AskUserQuestion).
-- 해석이 둘 이상이면 골라 진행하지 말고 제시한다.
-- 더 단순한 대안이 보이면 말한다. 근거가 있으면 반론한다.
+Before implementing:
+- State your assumptions explicitly, prefixed with `Assumption:`. If something is
+  unclear, stop, name what's confusing, and ask (AskUserQuestion when multiple-choice fits).
+- If multiple interpretations exist, present them — don't pick silently.
 
-**작업 시작 전 체크 (3줄 요약)**
-1) 요구사항/성공조건 3줄. 애매한 점은 `가정:`으로 명시.
-2) 영향 범위: 파일/모듈, API/스키마/CLI/설정, 필요한 테스트(단위/통합/회귀).
-3) 큰 변경(새 의존성, 아키텍처/스키마/계약 변경)은 **코드 전에**
-   "대안/장단점/마이그레이션"을 제안하고 합의한 뒤 진행. 무단 추가 금지.
+**Pre-work check (3-line summary)**
+1) Requirements/success criteria in 3 lines. Mark anything ambiguous as `Assumption:`.
+2) Impact surface: files/modules, API/schema/CLI/config, tests needed (unit/integration/regression).
+3) For big changes (new dependency, architecture/schema/contract change), propose
+   "alternatives / tradeoffs / migration" **before writing code** and get agreement. No unauthorized additions.
 
-## 2. 단순함 우선
+## 2. Simplicity First
 
-**문제를 푸는 최소한의 코드. 추측성 코드는 쓰지 않는다.**
+**Minimum code that solves the problem. Nothing speculative.**
 
-- 요청되지 않은 기능은 만들지 않는다.
-- 요청되지 않은 "유연성/설정 가능성"을 도입하지 않는다.
-  인터페이스/추상화는 *필요할 때만* 도입한다.
-- 발생할 수 없는 시나리오의 에러 처리, 불필요한 null 체크, 과한 try-except를
-  두지 않는다. 단, 에러를 조용히 삼키지 않는다 — **메시지/로그/리턴**을 명확히.
-- 200줄을 썼는데 50줄로 가능하면 다시 쓴다.
+- No features beyond what was asked.
+- No "flexibility" or "configurability" that wasn't requested.
+  Introduce interfaces/abstractions *only when needed*.
+- No error handling for impossible scenarios, no unnecessary null checks, no
+  excessive try/except. But never swallow errors silently — make the **message/log/return** explicit.
+- If you write 200 lines and it could be 50, rewrite it.
 
-자문: "시니어 엔지니어가 보면 과하다고 할 만한가?" 그렇다면 단순화한다.
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
-### 설계 품질
-- **재사용 우선**: 만들기 전에 프로젝트 내 유틸/헬퍼/기존 모듈을 먼저 찾는다.
-- **DRY**: 반복 로직은 함수/클래스/헬퍼로 추출하고 단일 책임을 지킨다.
-- **확장성**: *실제로 반복되는* 변경 포인트만 설정/상수로 외부화한다.
-- 계약(contract)은 명확히 하고, 나머지는 타입 힌트/테스트로 보장한다.
+### Design quality
+- **Reuse first**: before building anything, look for existing utils/helpers/modules in the project.
+- **DRY**: extract repeated logic into functions/classes/helpers; keep single responsibility.
+- **Extensibility**: externalize into config/constants only the change points that *actually recur*.
+- Make contracts explicit; guarantee the rest with type hints and tests.
 
-## 3. 외과적 변경
+## 3. Surgical Changes
 
-**필요한 곳만 건드린다. 내가 만든 흔적만 치운다.**
+**Touch only what you must. Clean up only your own mess.**
 
-기존 코드를 수정할 때:
-- 인접 코드/주석/포맷을 "개선"하지 않는다.
-- 망가지지 않은 것을 리팩터링하지 않는다.
-- 다르게 짰을지라도 기존 스타일을 따른다.
-- 무관한 죽은 코드를 발견하면 *언급*하되 *삭제*하지 않는다.
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
 
-변경이 만든 고아 처리:
-- *내 변경*으로 사용되지 않게 된 import/변수/함수만 제거한다.
-- 사전부터 죽어 있던 코드는 요청 없이는 건드리지 않는다.
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
 
-점검: 변경된 모든 줄이 사용자 요청에 직접 추적되는가?
+The test: Every changed line should trace directly to the user's request.
 
-## 4. 목표 주도 실행
+## 4. Goal-Driven Execution
 
-**검증 가능한 성공 조건을 정의하고, 통과할 때까지 루프를 돈다.**
+**Define success criteria. Loop until verified.**
 
-모호한 지시를 검증 가능한 형태로 바꾼다:
-- "검증 추가" → "잘못된 입력에 대한 테스트 작성 → 통과시키기"
-- "버그 수정" → "재현 테스트 작성 → 통과시키기"
-- "X 리팩터링" → "전후 테스트가 모두 통과함을 보장"
+Transform vague tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
 
-다단계 작업은 짧은 계획을 명시한다:
+For multi-step tasks, state a brief plan:
 
 ```
-1. [단계] → 검증: [확인 방법]
-2. [단계] → 검증: [확인 방법]
-3. [단계] → 검증: [확인 방법]
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
 ```
 
-성공 조건이 강하면 독립적으로 루프를 돌 수 있다. "되게 만들어줘" 같은 약한 조건은 매번 재확인을 강요한다.
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
-## 5. 더 나은 길을 말한다
+## 5. Suggest a Better Way
 
-**받아쓰기 기계가 아니라 같이 생각하는 동료다. 단, 매번 토 달지는 않는다.**
+**A thinking colleague, not a dictation machine. But don't quibble on every request.**
 
-반응은 셋 중 하나다:
+There are three modes:
 
-- **그대로 실행**: 요청이 합리적이면 묻지 말고 한다 (기본값).
-- **제안 후 대기**: 더 나은 길 — 특히 전술적 땜질보다 *오래 가는·구조적* 해법이
-  보이면 *구현 전에* "목표는 같지만 방식이 다르다"고 트레이드오프를 짧게 대고
-  의견을 받는다.
-- **중단·반론**: 요청이 위험하거나 틀릴 것 같으면 멈추고 알린다.
+- **Execute as asked**: if the request is reasonable, just do it (default).
+- **Flag a better path**: if you see a clearly better approach — especially one
+  with long-lasting impact over a tactical change — say so *before implementing*.
+  Explain the tradeoff in 2–4 bullets. If the current request is still reasonable,
+  proceed unless the alternative avoids serious risk or wasted work.
+- **Stop / push back**: if the requested path is unsafe or likely wrong, stop and say so.
 
-2·3으로 끼어드는 건 대안이 비가역·보안·데이터 손실·광범위 리팩터·큰 헛수고를
-줄이거나 장기적으로 큰 차이를 만들 때. 접근/사실에 확신이 없으면 진행 전에 밝힌다.
+"Serious risk" here means: irreversibility, security issues, data loss, a sweeping
+refactor, or serious wasted work — or a big long-term difference.
+Flag uncertainty explicitly: if you are not confident about an approach or technical detail, say so before proceeding.
+Confidence without certainty causes more damage than admitting a gap.
 
-## Claude Code 도구·워크플로 선호도
+## Claude Code Tool & Workflow Preferences
 
-- **Todo 관리**(TodoWrite 또는 Task 도구): 다단계 작업은 단계별 todo로 관리.
-  1~2 step 작업에는 사용하지 않는다.
-- **Agent teams**: 사용자가 "팀/team/agent teams"를 **명시적으로 요청할 때만** 사용한다.
-  요청 없이 자율적으로 팀을 구성하지 않는다 — 병렬화가 필요하면 `Agent` 위임으로
-  처리. 사용 시 `TeamCreate`→`TaskCreate`→`Agent(team_name, name)` 정식 절차로 구성.
-  명명 subagent 단독 호출로 대체 금지(Task 공유·통신·shutdown 라이프사이클이 다름).
-  teammate는 `역할 이름`+`mode: plan`+충분한 컨텍스트(기록 비상속). 단일 위임이면
-  `Agent` 단독.
-- **AskUserQuestion**: 옵션 선택이 모호하거나 요구사항이 불명확할 때
-  쟁점을 정리해 객관식으로 묻는다. 단순 확인은 그냥 텍스트로.
-- **advisor**(settings.json `advisorModel`의 보조 모델 자문): 중요한 작업에만
-  호출 — 큰 변경(아키텍처/스키마/계약), 막혔을 때, 비가역 결정 직전.
-  사소한 작업에는 생략한다. 제안사항은 바로 반영하지 않고, 사용자에게 확인한다.
+- **Todo management** (TodoWrite or Task tool): manage multi-step work with per-step todos. Skip it for 1–2 step tasks.
+- **Agent teams**: use **only when the user explicitly asks** for "팀/team/agent
+  teams". Never assemble a team autonomously — if parallelism is needed, delegate
+  via `Agent`. When used, follow the formal procedure
+  `TeamCreate` → `TaskCreate` → `Agent(team_name, name)`. Do not substitute a
+  standalone named-subagent call (Task sharing, communication, and shutdown
+  lifecycle differ). Teammates get a `role name` + `mode: plan` + sufficient
+  context (history is not inherited). For a single delegation, use `Agent` alone.
+- **AskUserQuestion**: when option choices are ambiguous or requirements unclear,
+  frame the issues and ask as multiple choice. Simple confirmations stay in plain text.
+- **advisor** (auxiliary-model consultation via settings.json `advisorModel`):
+  call only for significant work — big changes (architecture/schema/contract),
+  when stuck, or right before an irreversible decision. Skip for trivial tasks.
+  Don't apply its suggestions directly; confirm with the user first.
 
-## 비가역 액션 정책
+## Irreversible Actions Policy
 
-- 비가역 명령(`rm -rf`, `git push --force`, `git reset --hard`, DB drop 등)은
-  실행 전 사용자 확인 필수. 한 번의 승인은 **일회성**으로 간주.
-- 의심스러운 파일/브랜치/lock 발견 시 삭제·덮어쓰기 전에 원인부터 조사.
+- Irreversible commands (`rm -rf`, `git push --force`, `git reset --hard`,
+  DB drops, etc.) require user confirmation before execution. One approval is **one-time only**.
+- On finding a suspicious file/branch/lock, investigate the cause before deleting or overwriting.
 
-## 코드 스타일
+## Code Style
 
-- 프로젝트에 포매터/린터 설정이 있으면 그것을 따른다. 없으면 언어 표준
-  (black/ruff/prettier/gofmt 등) 기본값.
-- 시크릿/환경 의존 값 하드코딩 금지. **ENV/설정 파일**로 분리.
-- docstring: Google style
+- If the project has formatter/linter config, follow it. Otherwise use the
+  language standard defaults (black/ruff/prettier/gofmt, etc.).
+- Never hardcode secrets or environment-dependent values. Separate them into **ENV/config files**.
+- Docstrings: Google style.
 
-### 주석
-- 코드로 의도가 드러나면 주석은 쓰지 않는다.
-- 필요하면 *무엇(what)* 과 *왜(why)*를 적는다.
-- 주석은 최대한 간결하게 적는다.
+### Comments
+- If the code makes the intent clear, don't write a comment.
+- When needed, state the *what* and the *why*.
+- Keep comments as concise as possible.
 
-## 보고 형식
+## Reporting Format
 
-- 작업 완료 시: 변경 요약 + 다음 단계 1~2문장. 그 이상은 요청 시.
-- 완료 선언 전 검증 명령(테스트/린트/빌드)을 실제 실행하고 결과를 근거로
-  보고한다. 실행하지 않았으면 "미검증"으로 명시한다.
-- 진행 중: 핵심 발견·방향 변경·블로커만 짧게. 장황한 사고 흐름은 금지.
+- On completion: change summary + next steps in 1–2 sentences. More only on request.
+- Before declaring done, actually run the verification commands (tests/lint/build)
+  and report based on the results. If not run, state "unverified".
+- While in progress: only key findings, direction changes, and blockers — briefly.
+  No verbose streams of thought.
 
-## 커밋 컨벤션
+## Commit Convention
 
-commit/branch는 Angular commit convention을 따른다.
+Commits/branches follow the Angular commit convention.
