@@ -32,13 +32,16 @@ Record every optimization technique found in the code:
 - Model optimization (TorchScript, ONNX, TensorRT, quantization)
 - Index/retrieval structures (ANN, FAISS, ... — when applicable)
 
-### 5. End-to-end inference pipeline
+### 5. Inference sub-pipeline
 
 Draw the input -> preprocessing -> model -> post-processing ->
-output flow as a Mermaid flowchart.
+output flow as a Mermaid flowchart. This is the **inference-only
+sub-pipeline** — the structure-scout owns the whole-system top-level
+diagram, so scope yours to the serving path and do not redraw
+training/data-prep stages.
 
-Follow rule D1 (end-to-end pipeline) in
-`references/diagram-rules.md` when drawing diagrams.
+Follow rule D1 (end-to-end pipeline) from the diagram rules included
+in your prompt when drawing diagrams.
 
 ## Output rules
 

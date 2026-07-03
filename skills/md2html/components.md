@@ -164,6 +164,8 @@ For the single most important insight/conclusion of a section.
 - "phases / roadmap / timeline" → `gantt`
 - dense flowcharts: > 8 nodes, multiple branch points, or cross edges → `flowchart LR`/`TD`
 
+`build.py` also accepts `classDiagram`, `journey`, `pie`, and `timeline` (see its `MERMAID_TYPES`) for the rarer cases; the block must start with one of these keywords, never bare `graph`.
+
 ```html
 <figure class="diagram">
   <pre class="mermaid">
@@ -390,12 +392,12 @@ Apply these heuristics while reading the source `.md`:
 | "Pros / Cons", "장점 / 단점", "Trade-offs" | Pros-Cons (§7) |
 | "Option A / B / C", "Approaches" | Comparison cards (§8) |
 | Conclusion / TL;DR of an important section | Key-point highlight (§5) |
-| "Note", "FYI", "Background", "참고" | Callout info (§4a) |
-| "Careful", "Gotcha", "Risk", "주의" | Callout warn (§4b) |
-| "MUST NOT", "절대 금지" | Callout danger (§4c) |
-| "Done", "Completed", "완료" | Callout success (§4d) |
-| "Decision", "Chose X over Y", "결정" | Callout decision (§4e) |
-| "Recommendation", "Best practice", "팁" | Callout tip (§4f) |
+| "Note", "FYI", "Background", "참고" | Callout, `callout-info` variant (§4) |
+| "Careful", "Gotcha", "Risk", "주의" | Callout, `callout-warn` variant (§4) |
+| "MUST NOT", "절대 금지" | Callout, `callout-danger` variant (§4) |
+| "Done", "Completed", "완료" | Callout, `callout-success` variant (§4) |
+| "Decision", "Chose X over Y", "결정" | Callout, `callout-decision` variant (§4) |
+| "Recommendation", "Best practice", "팁" | Callout, `callout-tip` variant (§4) |
 | Long code / appendix / FAQ | Collapsible (§9) |
 | Short comparison table (≤ 4 columns) | Markdown table (§10) |
 | LaTeX math (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`) | KaTeX math (§15) — never `<code>` |

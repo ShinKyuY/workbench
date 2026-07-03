@@ -153,7 +153,7 @@ md2html/
 
 - [ ] Inline Mermaid bundle (true offline mode)
 - [ ] More themes (forest green, midnight blue, paper)
-- [ ] Gantt / roadmap component
+- [ ] Dedicated gantt/roadmap component (theme-native, beyond raw Mermaid `gantt`)
 - [ ] Auto-detect images in source and inline them
 
 PRs welcome — especially theme variants.

@@ -9,6 +9,13 @@ Analyze Agent output:
 - Dependency map
 - Test status
 
+Architecture review output (merged with the Analyze findings at
+Checkpoint ①):
+- SOLID violations, coupling/cohesion, anti-patterns, layering
+- These drive the structural techniques (e.g. special-case accretion →
+  generalize the mechanism), so plan from the merged set, not the
+  defect-sign list alone
+
 ## Procedure (수행 절차)
 
 ### 1. Technique matching (기법 매칭)
@@ -66,7 +73,9 @@ For each Step:
 ### 5. When there are no tests
 
 When refactoring untested code:
-1. Propose writing characterization tests first
+1. Propose writing characterization tests first — see
+   `references/characterization-testing.md` for the method (golden-value
+   capture, boundary inputs, approval pattern, re-run diff)
 2. If the user wants to proceed without tests, slice each Step smaller
    and add manual verification points
 

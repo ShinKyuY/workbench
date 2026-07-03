@@ -63,22 +63,31 @@ Do directly:
    - **/*.md (docs)
 
 2. Search key patterns with the available text-search tool
-   (prefer `rg`; Claude `Grep` is also fine):
+   (prefer `rg`; Claude `Grep` is also fine). Keep these
+   framework-neutral so they match any repo:
    - "class.*Dataset" -> dataset file locations
-   - "class.*Model\b|class.*Net\b|class.*Module" -> model files
-   - "def forward" -> forward pass locations
-   - "def train|class.*Trainer" -> training loop locations
-   - "nn\.Embedding|nn\.Conv|nn\.Linear|nn\.LSTM|nn\.Transformer"
-     -> architecture patterns in use
-   - "__main__" -> entry points
+   - "class.*Model\b|class.*Net\b|class.*Module\b|class.*Layer\b"
+     -> model files
+   - "def forward|def __call__|def call\b" -> forward pass locations
+     (PyTorch `forward`, JAX/Flax `__call__`, TF/Keras `call`)
+   - "def train|class.*Trainer|\.fit\(|value_and_grad" -> training loops
+   - "__main__|def main\b" -> entry points
 
-3. Read config files:
+3. Identify the framework, then grep its specific idioms:
+   - Check imports / dependency files to find the framework
+     (torch / jax·flax / tensorflow·keras / transformers).
+   - Read `references/framework-cues.md` and use the matching
+     column's signatures (layers, forward, config, checkpoint) for
+     the rest of reconnaissance. A single hard-coded PyTorch pattern
+     set silently misses JAX/TF/HF repos.
+
+4. Read config files:
    - Extract the model's key numbers (dims, layer counts,
      vocab sizes, ...)
    - Identify the architecture family
      (CNN/RNN/Transformer/GAN/Diffusion/MLP/recsys-ranking, ...)
 
-4. Fix the analysis scope:
+5. Fix the analysis scope:
    - If the repo contains multiple independent model families or
      subprojects (monorepo), ask the user which part to analyze using
      the available question mechanism (plain chat, `request_user_input`,
@@ -168,7 +177,7 @@ file before dispatching and include its content in the prompt.
 
 | # | Agent | File | subagent_type | Role |
 |---|-------|------|---------------|------|
-| 1 | structure-scout | `agents/structure-scout.md` | Explore (very thorough) | project structure, entry points, execution flow |
+| 1 | structure-scout | `agents/structure-scout.md` | general-purpose | project structure, entry points, execution flow |
 | 2 | data-pipeline | `agents/data-pipeline.md` | general-purpose | data pipeline, shape transitions |
 | 3 | model-architecture | `agents/model-architecture.md` | general-purpose | model structure, forward pass, core blocks |
 | 4 | training-workflow | `agents/training-workflow.md` | general-purpose | training loop, loss, optimizer |
@@ -179,17 +188,25 @@ What goes into each agent's prompt:
 2. The **concrete file paths of its target** (from the plan row) —
    for fanned-out instances, also one line on what the *other*
    instances cover, so the agent does not wander out of scope
-3. The **key numbers** read from configs (when applicable)
-4. The diagram/table rules from `references/diagram-rules.md`
-5. The report contract from `references/report-contract.md`
+3. The **config summary from Step 1 reconnaissance** — the key
+   numbers (dims, layer counts, vocab sizes, ...) you already read.
+   Pass it so agents (structure-scout especially) build on it
+   instead of re-reading every config from scratch.
+4. The identified framework and, for non-PyTorch repos, the relevant
+   `references/framework-cues.md` column, so agents grep the right
+   idioms.
+5. The diagram/table rules from `references/diagram-rules.md`
+6. The report contract from `references/report-contract.md`
    (report format, status header, unverified-items block,
    self-review)
+7. For shape-heavy agents (model-architecture, data-pipeline), the
+   tactics in `references/shape-tracing.md`.
 
-Items 4 and 5 go to **every dispatched agent**. Omitting them gets
+Items 5 and 6 go to **every dispatched agent**. Omitting them gets
 you diagrams with no rules and reports that cannot be verified.
 
 Subagent execution protocol (실행 프로토콜):
-- **Subagents know nothing about this conversation.** Items 1–5
+- **Subagents know nothing about this conversation.** Items 1–7
   above must all be in the prompt. A delegation like "analyze the
   repo" makes the subagent analyze the wrong target.
 - Parallel dispatch only works when all Agent calls are sent
@@ -204,7 +221,7 @@ Subagent execution protocol (실행 프로토콜):
 **Optional — Workflow tool** (dynamic workflows): when the Workflow
 tool is available and the plan is large (≥5 rows), you may encode
 Step 3 as a workflow script — one `agent()` call per plan row inside
-`parallel()`, each prompt assembled exactly as items 1–5 above. The
+`parallel()`, each prompt assembled exactly as items 1–7 above. The
 report contract and Step 4 verification stay unchanged. Plain
 parallel Agent calls are the default and fully sufficient; do not
 require the Workflow tool.
@@ -212,7 +229,8 @@ require the Workflow tool.
 **Fallback — environments without an Agent dispatch tool** (nested
 subagents, some platforms): instead of parallel dispatch, read the
 agent definition files chosen in Step 2 plus
-`references/diagram-rules.md` and `references/report-contract.md`,
+`references/diagram-rules.md`, `references/report-contract.md`,
+`references/framework-cues.md`, and `references/shape-tracing.md`,
 and perform each agent's procedure and output rules yourself,
 sequentially. The selection criteria and the quality bar
 (file:line evidence, unverified-items tracking, Step 4 verification)
@@ -265,7 +283,10 @@ structure itself stays fixed.
 # [Project] Analysis
 
 ## End-to-end workflow
-(Mermaid diagram: data -> preprocessing -> model -> output)
+(Top-level system diagram — data prep -> training -> inference ->
+output. Owned by structure-scout. The inference-only sub-pipeline
+belongs in section 4, owned by inference-analyst — do not duplicate
+the whole-system flow there.)
 
 ## 1. Data pipeline
 ### 1-1. Raw data schema
@@ -286,6 +307,8 @@ structure itself stays fixed.
 ### 3-4. CLI run examples
 
 ## 4. Inference & outputs
+(Inference-only sub-pipeline diagram lives here, owned by
+inference-analyst — not the whole-system flow.)
 ### 4-1. Inference input/output shapes
 ### 4-2. Output schema
 ### 4-3. Serving optimizations
@@ -297,8 +320,11 @@ structure itself stays fixed.
 ### 5-2. Save and report
 
 1. Save the assembled document as a `.md` file. If the user did not
-   specify a path, save to `docs/analysis/<topic>.md` in the
-   analyzed repo (create the directory if missing).
+   specify a path, save to `./analysis/<topic>.md` in the current
+   working directory (create the directory if missing) — not inside
+   the analyzed repo, since analysis is read-only and should not
+   leave files in someone else's tree. Write into the analyzed repo
+   (e.g. its `docs/`) only when the user asks for that.
 2. In chat, present only the key summary (end-to-end workflow plus a
    few main findings) and the `.md` file path. Do not paste the full
    document back into the chat.

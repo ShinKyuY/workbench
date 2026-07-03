@@ -156,9 +156,10 @@ starting Phase 4 (details in `agents/execute.md`):
    commit/stash first.
 2. **Not a git repository** — create backup copies of the target files
    and tell the user before proceeding.
-3. **No tests** — propose writing characterization tests first. If the
-   user wants to proceed without tests, slice each Step smaller and add
-   manual verification points.
+3. **No tests** — propose writing characterization tests first (how:
+   `references/characterization-testing.md`, read when the target has no
+   test coverage). If the user wants to proceed without tests, slice each
+   Step smaller and add manual verification points.
 
 ---
 
