@@ -5,9 +5,15 @@ When it conflicts with a project-level `AGENTS.md`, **project instructions win**
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
-## Language
+## Language & Writing
 
 Always respond in Korean.
+
+Writing rules for Korean prose (responses, docs, commit messages):
+- Write short. Prefer the phrasing with fewer characters when the meaning is the same.
+- Cut anything the sentence still works without.
+- Sentences should read smoothly when spoken aloud.
+- Avoid heavy use of parentheses, em dashes, and `·` — they don't fit Korean grammar.
 
 ## 1. Think Before Coding
 
