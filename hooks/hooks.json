@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf 'NOTE: The guidelines below apply when writing prose, documentation, or code comments.\\n\\n'; awk '/^## /{if(f) exit} /^## Language & Writing/{f=1} f' \"${CLAUDE_PLUGIN_ROOT}/CLAUDE.md\"",
+            "statusMessage": "Writing check"
+          }
+        ]
+      }
+    ]
+  }
+}
