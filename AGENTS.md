@@ -92,21 +92,6 @@ For multi-step tasks, state a brief plan with a verify step per item.
 - Checkpoint (double-check) only for big changes, when stuck,
   or right before an irreversible decision. Skip for trivial tasks.
 
-#### Subagents
-
-**Standing approval (overrides the default policy):** delegate to subagents
-autonomously without asking, whenever it fits the task.
-
-- Delegate independent work by default: exploration, review, test triage,
-  log/doc summarization, parallel verification.
-- Spawn one subagent per independent unit; the harness queues concurrency,
-  so don't hold back on count.
-- Delegate implementation only when file/module ownership is separable.
-  If agents might touch the same file, handle it directly or sequentially.
-- Label as `role:target` (e.g. `explorer:loader`, `reviewer:tests`).
-  Give each a clear scope, needed context, and expected output.
-  The main agent reviews results, resolves conflicts, verifies, integrates.
-
 ### Irreversible Actions Policy
 
 - Irreversible commands (`rm -rf`, `git push --force`, `git reset --hard`,
