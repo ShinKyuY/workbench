@@ -15,10 +15,9 @@ Analyzes an ML/AI model repository with the smallest workflow that fits
 the request: answer narrow questions directly, or use specialized
 subagents and produce a structured markdown document for broad analysis.
 
-Write the final analysis document and the chat summary in the
-language of the conversation (Korean session → Korean document).
-Section structure, code identifiers, and tensor-shape notation stay
-the same regardless of language.
+Write the document and chat summary in the conversation language;
+section structure, code identifiers, and tensor-shape notation stay
+the same.
 
 ## Core principles (핵심 원칙)
 
@@ -68,15 +67,12 @@ search scope.
 
 Do directly:
 ```
-1. Map the project tree with the available file-search tool
-   (prefer `rg --files`; Claude `Glob` is also fine):
+1. Map the project tree (`rg --files`, Glob, or equivalent):
    - **/*.py (main Python files)
    - **/config*.json, **/config*.yaml (config files)
    - **/*.md (docs)
 
-2. Search key patterns with the available text-search tool
-   (prefer `rg`; Claude `Grep` is also fine). Keep these
-   framework-neutral so they match any repo:
+2. Grep key patterns — framework-neutral so they match any repo:
    - "class.*Dataset" -> dataset file locations
    - "class.*Model\b|class.*Net\b|class.*Module\b|class.*Layer\b"
      -> model files
@@ -89,9 +85,8 @@ Do directly:
    - Check imports / dependency files to find the framework
      (torch / jax·flax / tensorflow·keras / transformers).
    - Read `references/framework-cues.md` and use the matching
-     column's signatures (layers, forward, config, checkpoint) for
-     the rest of reconnaissance. A single hard-coded PyTorch pattern
-     set silently misses JAX/TF/HF repos.
+     column's signatures for the rest of reconnaissance —
+     hard-coded PyTorch patterns silently miss JAX/TF/HF repos.
 
 4. Read config files:
    - Extract the model's key numbers (dims, layer counts,
@@ -101,15 +96,12 @@ Do directly:
 
 5. Fix the analysis scope:
    - If the repo contains multiple independent model families or
-     subprojects (monorepo), ask the user which part to analyze using
-     the available question mechanism (plain chat, `request_user_input`,
-     or Claude `AskUserQuestion`). A full analysis costs several times
-     the time/tokens, so narrowing the scope first is better.
-   - In an environment where the user cannot respond
-     (background/headless run), pick the part that the entry points
-     and the request context indicate is most central, and state the
-     choice and rationale at the top of the final document as an
-     explicit assumption.
+     subprojects (monorepo), ask the user which part to analyze —
+     a full monorepo analysis costs several times the time/tokens.
+   - If the user cannot respond (background/headless run), pick the
+     part the entry points and request context indicate is most
+     central, and state the choice at the top of the final document
+     as an explicit assumption.
 ```
 
 Output of this step: the **target inventory** — the model families,
@@ -171,13 +163,11 @@ Agent budget (예산) — these are full readers, not cheap verifiers:
   overflow is large — go back to the user through the available
   question mechanism to narrow the scope.
 
-Worked example: request "analyze the whole structure"; recon found
-independent models `interformer`/`wukong`, one shared dataset
-pipeline, one trainer → plan: structure-scout ×1,
+Worked example: "analyze the whole structure" + recon found
+independent models `interformer`/`wukong` → structure-scout ×1,
 model-architecture ×2, data-pipeline ×1, training-workflow ×1,
-inference-analyst ×1 = 6 agents — one over the default budget,
-justified by the two independent model families, within the hard
-cap.
+inference-analyst ×1 = 6 agents, one over the default budget,
+justified by the two independent model families.
 
 ---
 
@@ -221,34 +211,26 @@ you diagrams with no rules and reports that cannot be verified.
 
 Subagent execution protocol (실행 프로토콜):
 - **Subagents know nothing about this conversation.** Items 1–7
-  above must all be in the prompt. A delegation like "analyze the
-  repo" makes the subagent analyze the wrong target.
+  above must all be in the prompt.
 - Parallel dispatch only works when all Agent calls are sent
   **in a single message**.
 - Name spawned agents so the role is visible: `ml-structure-scout`,
   `ml-data-pipeline`, and so on. Fanned-out instances carry their
-  target: `ml-model-arch-interformer`, `ml-model-arch-wukong`.
+  target: `ml-model-arch-interformer`.
 - **Subagents cannot talk to the user.** Any judgment that needs
   user confirmation is only *reported* by the subagent; the main
   conversation asks the user.
 
-**Optional — Workflow tool** (dynamic workflows): when the Workflow
-tool is available and the plan is large (≥5 rows), you may encode
-Step 3 as a workflow script — one `agent()` call per plan row inside
-`parallel()`, each prompt assembled exactly as items 1–7 above. The
-report contract and Step 4 verification stay unchanged. Plain
-parallel Agent calls are the default and fully sufficient; do not
-require the Workflow tool.
+A large plan (≥5 rows) may also run as a Workflow script when that
+tool exists — same prompts, same report contract; plain parallel
+Agent calls stay the default.
 
-**Fallback — environments without an Agent dispatch tool** (nested
-subagents, some platforms): instead of parallel dispatch, read the
-agent definition files chosen in Step 2 plus
-`references/diagram-rules.md`, `references/report-contract.md`,
-`references/framework-cues.md`, and `references/shape-tracing.md`,
-and perform each agent's procedure and output rules yourself,
-sequentially. The selection criteria and the quality bar
-(file:line evidence, unverified-items tracking, Step 4 verification,
-the Step 5 mechanical check) apply unchanged.
+**Fallback — no Agent dispatch tool available** (nested subagents,
+some platforms): read the agent files chosen in Step 2 plus the
+`references/` files above, and perform each agent's procedure
+yourself, sequentially. The quality bar (file:line evidence,
+unverified-items tracking, Step 4 verification, Step 5 mechanical
+check) applies unchanged.
 
 ---
 
@@ -369,11 +351,8 @@ inference-analyst — not the whole-system flow.)
 ## Cautions during analysis (주의사항)
 
 1. **The docs-only trap**: explicitly instruct subagents to "read
-   the full source code". Report-quality rules — no shape guessing,
-   concrete examples required — are enforced directly on the agents
-   by `references/report-contract.md`.
-2. **Never trust reports blindly**: a subagent report enters the
-   document only after passing Step 4's sample verification and
-   boundary cross-checks, and the assembled document must pass the
-   Step 5 mechanical check (`scripts/verify_report.py`). Shapes,
-   numbers, citations — the code is the ground truth for all of them.
+   the full source code"; `references/report-contract.md` enforces
+   the report-quality rules on them.
+2. **Reports are claims, not evidence**: nothing enters the document
+   without Step 4 verification and the Step 5 mechanical check. The
+   code is the ground truth.

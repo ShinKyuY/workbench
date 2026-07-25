@@ -4,9 +4,7 @@ description: >-
   Use when the user wants to define or clarify a goal, success criteria,
   or a "definition of done", or to sharpen a vague ask ("make X faster",
   "목표 정의", "성공 기준", "되게 만들어줘") before starting work.
-  Produces a concrete, verifiable objective with evidence and bounded
-  scope; complex goals also get a plan/spec-first requirement. Definition
-  only — skip asks that already have a clear outcome.
+  Definition only — skip asks that already have a clear outcome.
 ---
 
 # Define Goal — 목표 정의 스킬
@@ -91,15 +89,10 @@ goals").
 
 ## Quality Bar — 최종 점검
 
-The finished objective should answer:
-
-- What concrete thing will be **true** when done?
-- What **evidence** proves it — would a second reviewer agree?
-- What **threshold** (numeric, binary, or rubric) defines success, against
-  what **baseline**?
-- What **scope / non-goals** matter?
-- When should the agent **stop and ask** instead of grinding?
-- Could the stated check be **gamed** without the real outcome happening?
+Reread the finished objective against the five Draft elements, then ask
+two more: would a second reviewer reach the same pass/fail verdict from
+the text alone, and could the stated check be gamed without the real
+outcome happening?
 
 ## Examples — Weak → Strong
 
@@ -129,14 +122,6 @@ The finished objective should answer:
 > 모두 green(`pytest tests/order -q`, 테스트 파일 무변경), public API
 > 시그니처 유지, 중복 로직 3곳 통합. 공개 인터페이스를 바꿔야만 가능한
 > 정리는 진행 전에 질문."
-
-**Model quality** (inline SMART):
-
-> Weak: "분류기 성능 좀 올려줘."
->
-> Strong: "The sentiment classifier reaches F1 ≥ 0.85 (vs. baseline 0.81)
-> on the held-out set of 10,000 posts with inference cost unchanged;
-> verify by rerunning the eval command twice with matching results."
 
 ## Frozen-goal block (목표 동결 템플릿)
 
@@ -168,9 +153,8 @@ implementing**, **checks it covers every "Done when" item**, and
 **updates it at each milestone boundary**. The goal stays frozen; the
 plan is the living document — a plan change that would alter the goal's
 outcome, thresholds, or scope is a Stop & ask, not a plan update.
-Without this, long work re-derives each step's approach from scratch
-and drifts. The "spec" half is not a separate file: interface and
-contract decisions live pinned in the plan's `Decisions:` section.
+The "spec" half is not a separate file: interface and contract
+decisions live pinned in the plan's `Decisions:` section.
 
 Read [references/plan-spec.md](references/plan-spec.md) when defining a
 complex goal — the full standard (zero-context, no placeholders,

@@ -63,18 +63,17 @@ wrong target or produce results that cannot be compared:
   the condition, and the main conversation asks the user. Checkpoints ①–③
   and the Phase 4 approval gates all fall under this rule.
 - Name spawned agents so the role is visible: `refactor-analyze`,
-  `refactor-plan`, and so on. Plan in particular collides with the
-  built-in Plan agent type, so spawning it unlabeled invites confusion.
+  `refactor-plan`, and so on — unlabeled `Plan` collides with the
+  built-in Plan agent type.
 - **Every subagent report ends with a status line**:
   `DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED` plus one line of
   reason (the agent files request this; repeat it in the spawn prompt).
   Orchestrator handling — `DONE_WITH_CONCERNS`: read the concern before
   using the result; `NEEDS_CONTEXT`: supply what is missing and
   re-dispatch; `BLOCKED`: never re-dispatch unchanged — add context,
-  split the work smaller, or raise it at the next checkpoint. Make clear
-  in every spawn prompt that escalating is acceptable: a subagent that
-  guesses instead of reporting NEEDS_CONTEXT produces confident-looking
-  wrong analysis, which is worse than no analysis.
+  split the work smaller, or raise it at the next checkpoint. Tell every
+  subagent that escalating is acceptable — guessing instead of reporting
+  NEEDS_CONTEXT produces confident-looking wrong analysis.
 - **Treat subagent reports as claims, not evidence.** Anything cheap to
   re-check in the main conversation (a test command's exit status,
   `git diff --stat` against the planned scope), re-check before acting
@@ -136,11 +135,9 @@ module-scoped shard destroys the very signal it looks for. When a Large
 target is too much for one agent, fan out into 2–5 **lens agents**
 (hard cap 5), each given the **whole** target but a single concern:
 dependencies / SOLID / anti-patterns / layering / extensibility
-(definitions and grouping rules in architecture.md "Lens mode"). The
-cost is reading the same structure up to 5 times — acceptable because
-Phase 2 reads module inventories and import graphs, not every line.
-Hand each agent the module inventory and entrypoints rather than
-expecting a line-by-line read.
+(definitions in architecture.md "Lens mode"). Hand each agent the
+module inventory and entrypoints — Phase 2 reads import graphs, not
+every line, so reading the same structure up to 5 times is acceptable.
 
 **Why Phase 4 never parallelizes:** each green test run is the safety
 gate for the next Step. Parallel Steps racing one working tree turn
@@ -267,11 +264,10 @@ between Steps, check the gate conditions.
 
 When delegating a Step, paste the **full Step text** from the plan
 (technique, target, change, affected files, rollback) into the spawn
-prompt — the subagent cannot see the plan or this conversation, and a
-pointer forces it to re-derive the plan, badly. After the subagent
-reports green, verify before the checkpoint commit: `git diff --stat`
-must match the Step's affected-files list, and the test command must
-have actually run. A green report without that check is a claim.
+prompt — the subagent cannot see the plan, and a pointer forces it to
+re-derive one. After the subagent reports green, verify before the
+checkpoint commit: `git diff --stat` must match the Step's
+affected-files list, and the test command must have actually run.
 
 Core principle — **small, safe, reversible**
 (작고, 안전하고, 되돌릴 수 있게):
@@ -320,6 +316,6 @@ table, test results, remaining work) to the user. Format: see
 | ② Execution plan | After Phase 3 | Never when a public API changes |
 | ③ Final results | After Phase 5 | No — always report |
 
-Why checkpoints exist: the most common refactoring accident is "silently
-changing behavior"; the second is "touching scope the user didn't want".
-Confirmation is the cheapest insurance against both.
+Checkpoints are the cheapest insurance against the two most common
+refactoring accidents: silently changing behavior, and touching scope
+the user didn't want.

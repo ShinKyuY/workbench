@@ -37,9 +37,9 @@ Extract from the conversation history:
 - The user's decisions/feedback/rejected directions.
 - Approaches that were tried and failed, and why.
 - Work that keeps running after the session ends (submitted jobs,
-  background processes, deployments, ...). Do not guess IDs — confirm
-  the actual values from logs/submission records; when something was
-  cancelled and resubmitted, make sure it is the last valid ID.
+  background processes, deployments). Never guess IDs — confirm them
+  from logs/submission records, and use the last valid ID when
+  something was cancelled and resubmitted.
 - Next steps and their priority.
 - Undecided items that need the user.
 
@@ -55,9 +55,7 @@ Additional rules:
   `(unverified)` — an unverified command turns the next agent's first
   30 seconds into debugging.
 - **Decision-log bar**: record only decisions/failures that would change
-  the next agent's behavior. Minor progress notes are already covered by
-  the verification table and changed files — a bloated log buries the
-  decisions that matter.
+  the next agent's behavior — a bloated log buries the ones that matter.
 - **No secrets**: never write tokens/passwords/credentials in plain
   text. Point to file paths or ENV variable names instead — handoff
   documents live long and get copied to unknown places.
@@ -202,6 +200,5 @@ separate file (`HANDOFF-history.md`).
   multiple parallel tasks, confirm which one to hand off.
 - If a HANDOFF.md exists but covers unrelated work, create a new file
   (`HANDOFF-<topic>.md`).
-- If progress is in an awkward half-done state, record it honestly as
-  "not run" in the verification table — preventing the next agent from
-  building on a broken foundation is the core value of a handoff.
+- Record half-done work honestly as "not run" in the verification
+  table — the next agent must not build on a broken foundation.
