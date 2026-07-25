@@ -15,15 +15,9 @@ directory.
 
 ## Compatibility
 
-Requires `python3`, `pandas`, and `pyarrow`.
-
-```bash
-python3 -c "import pandas, pyarrow"
-```
-
-If either package is missing, install it in the active project or
-virtual environment before launching the viewer. Do not bake a global
-install into the skill.
+Requires `python3`, `pandas`, and `pyarrow`
+(`python3 -c "import pandas, pyarrow"` to check). If missing, install
+into the active project or virtual environment, not globally.
 
 ## How to run (important)
 
@@ -89,15 +83,12 @@ python3 <skill-dir>/scripts/parquet_viewer.py /tmp/sample.parquet
 ## Stopping the server
 
 When relaunching the same file, or when the user says they are done,
-clean up the server.
+kill the old server first — a stale server still serving the same data
+confuses the user.
 
 ```bash
 lsof -ti:<port> | xargs kill
 ```
-
-Port collisions are not a concern — the script finds a free port
-automatically. But an old server still serving the same data can confuse
-the user, so kill the existing server before relaunching the same file.
 
 ## Viewer features
 

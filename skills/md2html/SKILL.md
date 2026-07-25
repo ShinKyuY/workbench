@@ -1,6 +1,6 @@
 ---
 name: md2html
-description: Use when turning long-form Markdown (plans, specs, RFCs, runbooks, notes) into one themed HTML file to read or share — KaTeX math, native SVG/HTML flow diagrams (Mermaid for complex ones), wireframe mockups for UI descriptions, timelines, callouts, sidebar TOC, Korean/English UI. Portable across Claude Code / Codex / any AI agent.
+description: Use when turning long-form Markdown (plans, specs, RFCs, runbooks, notes) into one themed HTML file to read or share — supports KaTeX math, flow diagrams, wireframe mockups, sidebar TOC, Korean/English UI. Portable across Claude Code / Codex / any AI agent.
 trigger: /md2html
 ---
 
@@ -59,7 +59,7 @@ Do this analysis silently in your head (or as one short summary line to the user
 - **Subtitle** — first paragraph after H1, or the document's TL;DR sentence. ≤ 200 chars.
 - **Doc type** — infer one of: `PLAN`, `SPEC`, `SYSTEM DESIGN`, `RFC`, `RUNBOOK`, `POSTMORTEM`, `BRAINSTORM`, `NOTES`. Pick the closest match based on the document's *purpose*, not its filename. Brainstorm = exploring options with rationale; Plan = ordered steps to a goal; Spec = exact behavior contract; System design = architecture + tradeoffs; RFC = proposal seeking feedback; Runbook = operational procedure; Postmortem = incident review. The uppercase code in the eyebrow stays universal; the topbar `BRAND_LABEL` localizes (Plan / 계획).
 - **Reading time** — words ÷ 250, round to nearest minute. For Korean sources whitespace word-counting undercounts badly — use characters ÷ 500 instead. Format follows the language table: `~N min read` / `~N분 소요`.
-- **Math presence** — scan for LaTeX delimiters (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`). If present, every formula goes through KaTeX (see §15 in `components.md`) — inline `$x$` becomes `\(x\)`, display `$$...$$` stays. The LaTeX body itself is copied verbatim. Math is never rendered as `<code>` or unicode approximation — that destroys subscripts and operators, and in math-heavy documents the equations ARE the content.
+- **Math presence** — scan for LaTeX delimiters (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`). If present, every formula goes through KaTeX per Critical rule 2 and §15 in `components.md`.
 - **Section map** — walk each H2/H3 and tag with the BEST component using §11 cheatsheet in `components.md`. The deciding test for visual vs text: **would the reader understand this section better by seeing it than by reading it?** Layouts, flows, state machines, schemas → visual; requirements, tradeoffs, conceptual choices → text components. A section *about* a UI is not automatically visual — "어떤 위저드를 만들까" is conceptual (text), "위저드 화면 구성은 이렇다" is visual (wireframe).
   - numbered action list → Timeline
   - architecture/flow prose → Native flow component (§6b) for simple flows (linear / one fan-out, ≤ ~8 nodes); Mermaid (§6) only for complex graphs, sequence, ER, state, gantt
@@ -74,7 +74,7 @@ Do this analysis silently in your head (or as one short summary line to the user
 
 ### Step 3 — Build the output HTML
 
-You write three small part files; `scripts/build.py` merges them into `template.html` and verifies the result. Never re-type the template yourself — that costs ~1,000 lines of output and risks silently corrupting CSS/JS.
+You write three small part files; `scripts/build.py` merges them into `template.html` and verifies the result.
 
 1. **Write `<output-dir>/.md2html-parts/meta.json`** — one value per template placeholder (all values come from Step 2 analysis, language-matched):
    - `{{LANG}}` → `ko` for Korean sources, `en` otherwise
@@ -97,7 +97,7 @@ You write three small part files; `scripts/build.py` merges them into `template.
    - Start with `<h2 id="..."> ` (matching the TOC entry).
    - Use ONE primary component per logical chunk (don't stack 3 callouts in a row).
    - Preserve original meaning — do not summarize away technical detail; condense only filler/repetition. md2html **restructures**, it does not **abridge**: a reader holding only the HTML must be able to reconstruct every claim, definition, derivation step, number, and caveat of the source. If a sentence feels "too detailed to keep", that's usually the sentence the author cared about most.
-   - Math follows §15 in `components.md`: LaTeX verbatim, inline `\(...\)`, display `$$...$$` in its own `<p>`, never inside `<code>`/`<pre>`.
+   - Math follows Critical rule 2 (§15 in `components.md`).
 4. **Fidelity sweep** — before building, re-walk the source top-to-bottom against your `content.html` and check off: every display equation still a display equation, every inline formula still math, every table row, list item, numeric fact, file/column name, and cross-reference present. Fix gaps now — this catch-step is cheap, a thin output is a rewrite.
 5. **Run the assembler** (script path relative to this SKILL.md):
 
@@ -124,7 +124,7 @@ You write three small part files; `scripts/build.py` merges them into `template.
 1. **Never paraphrase technical content into vague prose.** A step `0042_user_schema.sql 마이그레이션 실행` must keep that exact filename — don't change it to `새 마이그레이션 실행`.
 2. **Math renders via KaTeX — never as `<code>`/unicode approximation.** Inline `$x$` → `\(x\)`, display `$$...$$` stays display in its own `<p>`, LaTeX body verbatim (`m_{\mathrm{gap}}` stays `m_{\mathrm{gap}}`). Escape `<` `>` `&` inside math. See `components.md` §15.
 3. **One component per chunk.** Don't wrap a callout inside a step card inside a collapsible. Keep nesting flat.
-4. **Diagram > prose for any flow ≥ 3 hops** — and simple flows ship as the native flow component, not mermaid. If the source says "A calls B, B calls C, C writes to the DB", build it with §6b (theme-native HTML/SVG, KaTeX-capable labels, print-safe). Mermaid is reserved for diagrams that need a layout engine: sequence, ER, state, gantt, dense multi-branch flowcharts. Even if you sketch in mermaid first, the final HTML for a simple flow is the native component.
+4. **Diagram > prose for any flow ≥ 3 hops.** Simple flows ship as the native flow component (§6b); Mermaid is reserved for diagrams that need a layout engine (sequence, ER, state, gantt, dense flowcharts). Even if you sketch in mermaid first, ship simple flows as the native component.
 5. **Key-point highlights are rare.** Max 1 per H2 section, ideally 2-3 total per document.
 6. **UI text follows the detected source language** — Korean source → Korean labels, anything else → English labels (see the table in Step 2). Code, commands, file names, library names, error messages stay verbatim regardless of language.
 7. **Single-file output with known CDN hooks.** No external references
@@ -138,18 +138,14 @@ You write three small part files; `scripts/build.py` merges them into `template.
 
 ## Cross-AI compatibility
 
-This skill is designed to run identically on:
-
-- **Claude Code** — install at `~/.claude/skills/md2html/` (this directory, symlinked or copied). Invoke with `/md2html <file>`.
-- **Codex CLI** — copy `SKILL.md` content to `~/.codex/prompts/md2html.md`, keep `template.html`, `components.md`, and `scripts/build.py` at a stable absolute path, update the file references in SKILL.md if needed. Invoke with `/md2html`.
-- **Antigravity** — add SKILL.md as a custom prompt/agent instruction, ensure the agent has Read/Write tool access to the skill folder.
-
-Runtime dependencies: `python3` (stdlib only) for `scripts/build.py` —
-available out of the box on macOS/Linux and in every major agent CLI
-sandbox; if it's truly missing, use the manual fallback in Step 3. The
-output is one HTML file; Mermaid, KaTeX, and Google Fonts resolve from
-the CDNs already declared in `template.html` when network is available
-and degrade gracefully when it is not. No npm/pip install required.
+Runs identically on Claude Code (`~/.claude/skills/md2html/`, invoke
+with `/md2html <file>`), Codex CLI (SKILL.md copied to
+`~/.codex/prompts/md2html.md`, support files kept at a stable path),
+and any agent with Read/Write access to this folder. Only runtime
+dependency: `python3` (stdlib only) for `scripts/build.py` — if truly
+missing, use the Step 3 manual fallback. Mermaid, KaTeX, and fonts
+resolve from the CDNs declared in `template.html` and degrade
+gracefully offline; no npm/pip install.
 
 ## Edge cases
 
