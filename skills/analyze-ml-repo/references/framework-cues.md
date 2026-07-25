@@ -53,5 +53,29 @@ Check imports and dependency files before anything else:
 - **PyTorch**: default and most detailed path; the `SKILL.md`
   procedures assume it.
 
+## Beyond these columns — deriving cues for unfamiliar stacks
+
+The four columns cover the major base frameworks, not everything a
+repo can sit on. Repos routinely add layers the table does not name:
+fine-tuning/adapter wrappers, trainer frameworks, serving runtimes,
+data-loading libraries — and new ones appear faster than this file
+updates. Do not force them into a column or skip them; derive the
+cues yourself:
+
+1. Identify the library from imports and dependency files, the same
+   way you identified the base framework.
+2. Find that library's equivalents of the concern rows above — model
+   definition, forward, training step, config, checkpoint — by
+   greping where the repo calls into it and reading those call
+   sites. The repo's own usage is the ground truth, not your memory
+   of the library's API.
+3. Wrappers usually delegate to a base framework underneath.
+   Identify the backend, then trace shapes with the backend's
+   column: the wrapper decides *which* code runs (training loop,
+   serving path), the backend decides tensor mechanics.
+4. Record the mapping you derived (library → where model/train/
+   checkpoint live) in the report, so the orchestrator and other
+   agents reuse it instead of re-deriving it.
+
 See `shape-tracing.md` for tactics when a shape is not obvious in any
 framework.

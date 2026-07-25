@@ -5,7 +5,8 @@ description: >-
   training/data pipelines, tensor shapes. Use whenever model training or
   inference code needs explaining, even without the word "analyze":
   "how does this model work?", "trace the data flow", "이 모델 어떻게
-  동작해?", "데이터가 어떻게 흘러가?", "코드 구조 분석해줘".
+  동작해?", "데이터가 어떻게 흘러가?", or "코드 구조 분석해줘" on an ML
+  repo. Not for general non-ML codebase structure or refactoring requests — use a refactoring skill for those.
 ---
 
 # ML Repository Analyzer (ML 레포 구조 분석)
@@ -38,13 +39,24 @@ the same regardless of language.
 
 ## Output mode routing (출력 방식 라우팅)
 
-- **Quick answer**: single-file questions, "what does this model do?",
-  or a specific shape/flow question. Do Step 1 reconnaissance, read the
-  directly relevant files, answer in chat, and skip subagents/files
-  unless the user asks for a document.
-- **Full document**: whole-repo structure, end-to-end workflow, or
-  multiple pipeline areas. Run the dispatch plan and save the final
-  markdown document.
+Route by how much reading the answer needs, not by matching phrases —
+the same wording ("how does the model work?") can be either mode
+depending on scope:
+
+- **Quick answer**: the answer is one specific fact or a short chain
+  confirmable by reading a few directly relevant files — a single
+  shape, one function's behavior, one config value. Do Step 1
+  reconnaissance, read those files, answer in chat with file:line
+  evidence, and skip subagents/files unless the user asks for a
+  document.
+- **Document mode**: answering requires sweeping one or more pipeline
+  areas (data, model, training, inference) — whole-repo structure,
+  end-to-end workflow, architecture-depth "how does X work". Run the
+  dispatch plan and save the final markdown document scoped to the
+  dispatched roles.
+- **Escalate, don't straddle**: when a quick answer grows past a few
+  paragraphs or pulls in a second pipeline area, say you are
+  switching to document mode, then build the dispatch plan.
 
 ---
 
@@ -115,6 +127,8 @@ from the request, then set the **instance count** per role from the
 Step 1 target inventory.
 
 ### 2-1. Pick roles from the request
+
+These rows apply in document mode; a quick answer never dispatches.
 
 | Request type | Roles to dispatch |
 |--------------|--------------------|
@@ -233,8 +247,8 @@ agent definition files chosen in Step 2 plus
 `references/framework-cues.md`, and `references/shape-tracing.md`,
 and perform each agent's procedure and output rules yourself,
 sequentially. The selection criteria and the quality bar
-(file:line evidence, unverified-items tracking, Step 4 verification)
-apply unchanged.
+(file:line evidence, unverified-items tracking, Step 4 verification,
+the Step 5 mechanical check) apply unchanged.
 
 ---
 
@@ -249,8 +263,11 @@ When all subagent results are back:
      re-dispatch. Never retry with the same prompt unchanged.
 2. **Sample-verify — do not trust the report**: from each report,
    pick 2–3 key shape/number claims and open the cited file:line to
-   compare. If even one is wrong, distrust the rest of that agent's
-   claims and widen the verification.
+   check the code really says what the report claims. Citation
+   existence and Mermaid syntax are checked mechanically in Step 5
+   by `scripts/verify_report.py` — spend the manual samples on
+   meaning, not existence. If even one sample is wrong, distrust the
+   rest of that agent's claims and widen the verification.
 3. **Cross-check boundaries**: confirm that the seams between agents
    agree. On mismatch, open the code yourself, decide which side is
    right, and fix it.
@@ -277,7 +294,12 @@ Assemble the subagent results into the structure below. Diagrams
 follow the rules in `references/diagram-rules.md` (Mermaid/markdown
 tables), and every section links the relevant source file paths.
 Translate the section titles into the conversation language; the
-structure itself stays fixed.
+section order stays fixed.
+
+The full template applies to whole-repo analyses. For a partial
+dispatch (only some roles ran), keep the End-to-end workflow section
+plus the sections owned by the dispatched roles, renumber them, and
+open the document with one line stating what is and is not covered.
 
 ```markdown
 # [Project] Analysis
@@ -319,16 +341,28 @@ inference-analyst — not the whole-system flow.)
 
 ### 5-2. Save and report
 
-1. Save the assembled document as a `.md` file. If the user did not
-   specify a path, save to `./analysis/<topic>.md` in the current
-   working directory (create the directory if missing) — not inside
-   the analyzed repo, since analysis is read-only and should not
-   leave files in someone else's tree. Write into the analyzed repo
-   (e.g. its `docs/`) only when the user asks for that.
-2. In chat, present only the key summary (end-to-end workflow plus a
+1. Save the assembled document as a `.md` file. Default path when
+   the user did not specify one:
+   - Analyzing the repo you are working in (CWD inside the target
+     repo): `./analysis/<topic>.md`, creating the directory if
+     missing. It is the user's own tree; mention in the summary that
+     the file is untracked so they can commit or gitignore it.
+   - Analyzing another tree (a clone, a dependency, a path the user
+     pointed at): save under the CWD, never inside the analyzed
+     repo — analysis is read-only and must not leave files in
+     someone else's tree. Write into the analyzed repo (e.g. its
+     `docs/`) only when the user asks.
+2. Mechanically verify the saved document:
+   `python3 <skill-dir>/scripts/verify_report.py <doc.md> --repo
+   <analyzed-repo-root>`. It checks every file:line citation (file
+   exists, line within file length) and lints Mermaid blocks
+   (direction stated, bracket labels quoted, subgraph/end balanced).
+   Fix failures by reopening the code — never by deleting evidence —
+   and re-run until it prints `result: OK`.
+3. In chat, present only the key summary (end-to-end workflow plus a
    few main findings) and the `.md` file path. Do not paste the full
    document back into the chat.
-3. Create additional formats only when the user explicitly asks.
+4. Create additional formats only when the user explicitly asks.
 
 ---
 
@@ -340,5 +374,6 @@ inference-analyst — not the whole-system flow.)
    by `references/report-contract.md`.
 2. **Never trust reports blindly**: a subagent report enters the
    document only after passing Step 4's sample verification and
-   boundary cross-checks. Shapes, numbers, citations — the code is
-   the ground truth for all of them.
+   boundary cross-checks, and the assembled document must pass the
+   Step 5 mechanical check (`scripts/verify_report.py`). Shapes,
+   numbers, citations — the code is the ground truth for all of them.
