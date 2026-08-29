@@ -12,7 +12,7 @@ matching column.
 
 Check imports and dependency files before anything else:
 
-- `import torch` / `torch` in `requirements.txt`·`pyproject.toml` → **PyTorch**
+- `import torch` / `torch` in `requirements.txt` or `pyproject.toml` → **PyTorch**
 - `import jax`, `flax`, `import haiku` → **JAX / Flax / Haiku**
 - `import tensorflow`, `from tensorflow import keras` → **TF / Keras**
 - `from transformers import ...`, `transformers` dependency → **HF Transformers**

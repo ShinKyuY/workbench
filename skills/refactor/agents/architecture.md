@@ -50,7 +50,7 @@ the orchestrator can merge the lens reports at Checkpoint ①.
 | **ISP** (interface segregation) | Do clients depend on methods they don't use? |
 | **DIP** (dependency inversion) | Do high-level modules depend directly on low-level concrete implementations? |
 
-### 3. Coupling & cohesion analysis (결합도·응집도)
+### 3. Coupling & cohesion analysis (결합도와 응집도)
 
 **Coupling (lower is better)**
 - Excessive direct references between modules?

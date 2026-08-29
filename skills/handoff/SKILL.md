@@ -124,7 +124,7 @@ recommended (manual lists drift).
 {git status output or change summary}
 ```
 
-## Decision · attempt log (append-only)
+## Decision and attempt log (append-only)
 
 History preservation area. Each new session adds entries at the top;
 previous entries are never deleted.
@@ -178,7 +178,7 @@ When a HANDOFF.md already exists, sections are handled differently.
 - The header's last-updated / branch
 
 **Append-only (history accumulates)**
-- Decision · attempt log — add the newest entry at the top. Never
+- Decision and attempt log — add the newest entry at the top. Never
   delete or modify previous entries.
 
 **Custom sections (outside the template)**

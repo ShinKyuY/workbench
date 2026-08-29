@@ -52,7 +52,7 @@ code actually contains:
   sharding, communication patterns) → per-table memory estimates
 - **Feature interaction** (recsys/ranking): dot/FM/DCN/attention
   interaction structure with input/output shapes
-- **Multi-task structure**: MMoE/PLE expert·gate shapes, per-task
+- **Multi-task structure**: MMoE/PLE expert/gate shapes, per-task
   heads and output shapes
 - **Convolution**: kernels, strides, padding, channel changes
   → receptive field computation
