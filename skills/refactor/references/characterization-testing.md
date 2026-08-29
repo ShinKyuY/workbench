@@ -30,7 +30,7 @@ For a first pass, let the test print the actual output, copy it into the
 assertion, and re-run to confirm it now passes. This is legitimate here
 precisely because the goal is to reproduce, not to specify.
 
-## 2. Select boundary and representative inputs (경계·대표 입력 선정)
+## 2. Select boundary and representative inputs (경계 및 대표 입력 선정)
 
 Coverage of *inputs*, not lines, is what makes the net catch changes.
 Prioritize:

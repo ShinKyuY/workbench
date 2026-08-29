@@ -6,11 +6,11 @@ Claude Code 커스텀 스킬 모음 플러그인.
 
 | 스킬 | 설명 |
 |------|------|
-| `define-goal` | 모호한 의도를 측정·검증 가능한 목표로 변환 (성공 기준·증거·범위·완료 조건) |
+| `define-goal` | 모호한 의도를 측정/검증 가능한 목표로 변환 (성공 기준, 증거, 범위, 완료 조건) |
 | `handoff` | 다음 세션/에이전트가 cold start로 이어받을 수 있는 HANDOFF.md 생성 |
 | `analyze-ml-repo` | ML/AI 모델 레포 구조 분석 (데이터 흐름, 텐서 형상, 학습 파이프라인) |
 | `refactor` | 코드 결함 분석 → 아키텍처 점검 → 계획 → 실행 → 검증 리팩토링 파이프라인 |
-| `md2html` | 장문 Markdown을 KaTeX 수식·네이티브 플로우 다이어그램·와이어프레임·Mermaid·TOC 포함 단일 테마 HTML로 변환 |
+| `md2html` | 장문 Markdown을 KaTeX 수식, 네이티브 플로우 다이어그램, 와이어프레임, Mermaid, TOC 포함 단일 테마 HTML로 변환 |
 | `parquet-viewer` | Parquet 파일을 브라우저 테이블 뷰어로 탐색 |
 
 ## 설치
@@ -33,7 +33,7 @@ claude plugin update workbench@shinkyuy
 
 ## 전역 지침 (CLAUDE.md / AGENTS.md)
 
-[`CLAUDE.md`](./CLAUDE.md)(Claude Code용)와 [`AGENTS.md`](./AGENTS.md)(Codex CLI 등 기타 에이전트용)는
+[`CLAUDE.md`](./CLAUDE.md)(Claude Code용)와 [`AGENTS.md`](./AGENTS.md)(Codex CLI 등 기타 에이전트용, `CLAUDE.md`의 symlink)는
 플러그인 설치와 **무관하게 동봉만** 된 파일입니다.
 설치해도 자동 적용되지 않으며, 원하는 사람만 본인 전역 지침에 복사해서 사용하세요.
 

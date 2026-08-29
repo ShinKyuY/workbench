@@ -83,7 +83,7 @@ Do directly:
 
 3. Identify the framework, then grep its specific idioms:
    - Check imports / dependency files to find the framework
-     (torch / jax·flax / tensorflow·keras / transformers).
+     (torch / jax/flax / tensorflow/keras / transformers).
    - Read `references/framework-cues.md` and use the matching
      column's signatures for the rest of reconnaissance —
      hard-coded PyTorch patterns silently miss JAX/TF/HF repos.
@@ -234,7 +234,7 @@ check) applies unchanged.
 
 ---
 
-## Step 4: Synthesize and verify (결과 종합·검증)
+## Step 4: Synthesize and verify (결과 종합과 검증)
 
 When all subagent results are back:
 
