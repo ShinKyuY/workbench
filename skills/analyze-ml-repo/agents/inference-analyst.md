@@ -1,7 +1,7 @@
 # Inference Analyst — Inference/Serving Analysis (추론/서빙 분석)
 
 Agent that analyzes the inference pipeline, output schema, and
-serving optimizations. Research only — never modifies code.
+serving optimizations.
 
 ## Procedure
 
@@ -45,9 +45,7 @@ in your prompt when drawing diagrams.
 
 ## Output rules
 
-Common reporting rules (report format, status header,
-unverified/assumed items, self-review) follow the report contract
-delivered with this prompt. In addition:
+Beyond the report contract in your prompt:
 
 - The output-schema sample must contain concrete values confirmed from
   data/tests/logs when available. If only code/schema is available,

@@ -7,8 +7,8 @@ inline, the stages and artifacts are the same.
 
 ## Input
 
-The Step to perform from the Plan Agent's output (technique, target,
-change, risk)
+The Step to perform, pasted in full from the Plan Agent's output
+(technique, target, change, affected files, risk, rollback)
 
 ## Core principle
 
@@ -19,20 +19,6 @@ Each transform:
 - Does not change external behavior
 - Can be undone immediately on failure
 
-## Pre-flight checks (required)
-
-Rollback requires a clean starting point. Once, before the first Step,
-the orchestrator (main conversation) performs:
-
-1. Check `git status` — uncommitted changes mix the user's work with
-   refactoring changes, making selective rollback impossible.
-   Propose commit or stash first; start only after it's clean.
-2. If not a git repository, create backup copies of the target files
-   and tell the user where the backups are.
-3. Re-confirm the tests are green in the current state.
-   If the starting point is red, no failure can be attributed to the
-   refactoring.
-
 ## Execution protocol
 
 ### For each Step:
@@ -42,10 +28,7 @@ the orchestrator (main conversation) performs:
    - Perform only the planned single refactoring
    - Never mix refactoring with functional changes
 
-2. Update references
-   - Renames: update every reference, no exceptions
-   - File moves: fix import paths in all consumers
-   - Signature changes: check every call site
+2. Update references (renames, moves, signature changes)
 
 3. Run tests
    - Run the project's test command
@@ -59,38 +42,12 @@ the orchestrator (main conversation) performs:
    - Test results
 ```
 
-## Per-technique guides
+## Per-technique note
 
-### Extract Method
-1. Identify the code block to extract
-2. Create the new function, move the code
-3. Call the new function from the original site
-4. Set the needed parameters and return values
-5. Check for variable scope conflicts
-
-### Extract Class
-1. Identify the responsibility (fields + methods) to split out
-2. Create the new class
-3. Move fields and methods one at a time (test each move)
-4. Reference the new class from the original
-5. Redirect external access points
-
-### Move Method/Field
-1. Copy to the target class
-2. Adjust references
-3. Test
-4. Remove the original
-
-### Replace Conditional with Guard Clauses
-1. Convert from the outermost condition first
-2. One condition at a time
-3. Test after each conversion
-
-### Rename
-1. Decide the new name
-2. Find all references (`grep`, `rg` or the available text-search tool)
-3. Change them all
-4. Test
+Follow standard Fowler mechanics. One skill-specific rule: when a
+technique moves several parts (Extract Class fields/methods, nested
+conditions to guard clauses), move one part at a time and run the tests
+between moves.
 
 ## Guardrails (안전장치)
 

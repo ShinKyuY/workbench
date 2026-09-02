@@ -1,8 +1,7 @@
 # Data Pipeline Analyst (데이터 파이프라인 분석)
 
 Agent that analyzes the full data flow: raw data -> preprocessing ->
-Dataset -> collate -> model input. Research only — never modifies
-code.
+Dataset -> collate -> model input.
 
 ## Procedure
 
@@ -61,9 +60,7 @@ runtime dims), use the shape-tracing rules included in your prompt
 
 ## Output rules
 
-Common reporting rules (report format, status header,
-unverified/assumed items, self-review) follow the report contract
-delivered with this prompt. In addition:
+Beyond the report contract in your prompt:
 
 - When your prompt scopes you to a **single dataset pipeline**,
   analyze only that one. If one prompt hands you multiple datasets,

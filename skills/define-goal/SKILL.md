@@ -84,8 +84,7 @@ scope **inside** it, phrased as a prompt a fresh agent can act on. Write it
 to a file only when the user gave a path or asked for a file, or when the
 work is large / long-horizon — then use the frozen-goal block (default
 `goal.md`). If the goal is complex enough to span sessions or modules,
-also bake in the plan-first requirement (see "Plan/spec for complex
-goals").
+also bake in the plan-first requirement (see "Plan for complex goals").
 
 ## Quality Bar — 최종 점검
 
@@ -135,15 +134,15 @@ Constraints:<perf / platform / determinism / files allowed to change>
 Baseline:   <current measured value, or how to measure it>
 Done when:  <checks + how to demo it: commands, thresholds, runs>
 Stop & ask: <conditions that should pause for the user>
-Plan:       <complex goals only: plan/spec file the executor writes
-             before implementing and references per milestone>
+Plan:       <complex goals only: `plan.md` the executor writes before
+             implementing and references per milestone>
 ```
 
 For multi-step work, slice "Done when" into one-loop milestones, each with
 its own acceptance check + validation command, and **stop-and-fix**: if a
 check fails, repair before moving on.
 
-## Plan/spec for complex goals (복잡한 목표는 계획을 먼저)
+## Plan for complex goals (복잡한 목표는 계획을 먼저)
 
 When the work is expected to span multiple sessions, touch several
 modules or systems, or carry unknowns that need investigation — signals
@@ -153,14 +152,14 @@ implementing**, **checks it covers every "Done when" item**, and
 **updates it at each milestone boundary**. The goal stays frozen; the
 plan is the living document — a plan change that would alter the goal's
 outcome, thresholds, or scope is a Stop & ask, not a plan update.
-The "spec" half is not a separate file: interface and contract
-decisions live pinned in the plan's `Decisions:` section.
+Interface and contract decisions live pinned in the plan's `Decisions:`
+section.
 
-Read [references/plan-spec.md](references/plan-spec.md) when defining a
-complex goal — the full standard (zero-context, no placeholders,
-milestone sizing, pinned interfaces, template). Point the executor to
-it, or copy its template into the goal if the executor can't reach this
-skill's files.
+Read [references/plan.md](references/plan.md) when defining a complex
+goal — the full standard (zero-context, no placeholders, milestone
+sizing, pinned interfaces, verification per milestone, template). Point
+the executor to it, or copy its template into the goal if the executor
+can't reach this skill's files.
 
 Small goals: inline milestones in the frozen-goal block are enough — a
 plan file for a one-loop fix is friction, not safety. When it's unclear

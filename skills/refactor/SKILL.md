@@ -57,7 +57,13 @@ wrong target or produce results that cannot be compared:
   must include: (1) the absolute path of the agent file to read,
   (2) target file/directory paths, (3) the project's test command,
   (4) constraints and priorities the user mentioned, (5) the expected
-  output format (the "Output format" section of each agent file).
+  output format (the "Output format" section of each agent file),
+  (6) the artifacts the agent file's "Input" section names, pasted in
+  full — for Plan: the merged Checkpoint ① report and the scope and
+  priorities the user agreed to; for Verify: the baseline table with
+  its measurement commands, the union of affected files across all
+  Steps, and each Step's Execute record. A pointer to the conversation
+  is not enough; the subagent cannot see it.
 - **Subagents cannot talk to the user.** Never let a judgment that needs
   user confirmation happen inside a subagent — the subagent only reports
   the condition, and the main conversation asks the user. Checkpoints ①–③
@@ -146,7 +152,7 @@ gate for the next Step. Parallel Steps racing one working tree turn
 ## Safety precondition: pre-flight checks (시작 전 점검)
 
 Refactoring is only safe while "we can roll back" holds. Verify before
-starting Phase 4 (details in `agents/execute.md`):
+starting Phase 4:
 
 1. **Git working tree state** — uncommitted changes mix the user's work
    with refactoring changes, making rollback impossible. Propose
@@ -263,26 +269,15 @@ per-Step subagent given `agents/execute.md`, or perform it inline;
 between Steps, check the gate conditions.
 
 When delegating a Step, paste the **full Step text** from the plan
-(technique, target, change, affected files, rollback) into the spawn
+(technique, target, change, affected files, risk, rollback) into the spawn
 prompt — the subagent cannot see the plan, and a pointer forces it to
 re-derive one. After the subagent reports green, verify before the
 checkpoint commit: `git diff --stat` must match the Step's
 affected-files list, and the test command must have actually run.
 
-Core principle — **small, safe, reversible**
-(작고, 안전하고, 되돌릴 수 있게):
-
-1. **Apply the transform** — one refactoring per Step. Never mix
-   refactoring with functional changes; the moment they mix, the
-   criterion "test failure = behavior change" collapses.
-2. **Update references** — on rename/move/signature change, check every
-   reference
-3. **Run tests** — green → next Step; red → roll back immediately and
-   retry in smaller units
-4. **Checkpoint** — propose an intermediate commit after each successful
-   Step
-
-Per-technique execution guides and guardrails: see `agents/execute.md`.
+Each Step applies one technique, runs the tests, and on green proposes
+an intermediate commit. Red means roll back and retry in smaller units.
+Procedure, per-technique note, and guardrails: `agents/execute.md`.
 
 ---
 

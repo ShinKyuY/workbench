@@ -108,7 +108,7 @@ the orchestrator can merge the lens reports at Checkpoint ①.
 ## Architecture review results
 
 ### SOLID violations
-- [principle] location — description — suggested direction
+- [principle] location — severity — description — suggested direction
 
 ### Coupling / cohesion
 - Coupling: high/medium/low — evidence
@@ -116,10 +116,13 @@ the orchestrator can merge the lens reports at Checkpoint ①.
 - Circular dependencies: yes/no
 
 ### Architecture anti-patterns
-- [name] — location — impact — suggested direction
+- [name] — location — severity — impact — suggested direction
 
 ### Layer separation
 - Violations (if any)
+
+### Extensibility / maintainability
+- [concern] location — severity — impact — suggested direction
 
 ### Recommendations (by priority)
 1. [highest-impact item]

@@ -1,7 +1,7 @@
 # Structure Scout — Project Structure Analysis (프로젝트 구조 분석)
 
 Agent that maps the overall structure, entry points, and execution
-flow of an ML project. Research only — never modifies code.
+flow of an ML project.
 
 ## Procedure
 
@@ -43,8 +43,6 @@ in your prompt when drawing diagrams.
 
 ## Output rules
 
-Common reporting rules (report format, status header,
-unverified/assumed items, self-review) follow the report contract
-delivered with this prompt. In addition:
+Beyond the report contract in your prompt:
 
 - Every diagram must annotate tensor shapes.

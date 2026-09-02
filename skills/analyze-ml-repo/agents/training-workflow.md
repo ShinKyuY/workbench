@@ -1,7 +1,7 @@
 # Training Workflow Analyst (학습 워크플로우 분석)
 
 Agent that analyzes the training loop, loss, optimizer, distributed
-training, and checkpoints. Research only — never modifies code.
+training, and checkpoints.
 
 ## Procedure
 
@@ -53,9 +53,7 @@ python train.py --args
 
 ## Output rules
 
-Common reporting rules (report format, status header,
-unverified/assumed items, self-review) follow the report contract
-delivered with this prompt. In addition:
+Beyond the report contract in your prompt:
 
 - Extract loss formulas directly from the code. Do not copy formulas
   from the docs.

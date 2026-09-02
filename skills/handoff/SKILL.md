@@ -29,6 +29,12 @@ Collect the following in parallel first:
 - `git status`, `git diff --stat`, `git log --oneline -5` for the
   objective change state (skip if not a git repo).
 
+Then settle the scope:
+- If a HANDOFF.md exists but covers unrelated work, write
+  `HANDOFF-<topic>.md` instead of overwriting it.
+- With several parallel tasks, confirm which one the user wants handed
+  off.
+
 ### 2. Analyze the session
 
 Extract from the conversation history:
@@ -46,8 +52,9 @@ Extract from the conversation history:
 ### 3. Write the document
 
 Use the template below. Mark empty sections `_(none)_` explicitly
-rather than deleting them — so the next agent never wonders "not
-recorded, or really none?".
+rather than deleting them, so the next agent never wonders "not
+recorded, or really none?". References is the one section to omit when
+empty.
 
 Additional rules:
 - **Repro commands: only ones actually run** — run them and check the
@@ -60,7 +67,7 @@ Additional rules:
   text. Point to file paths or ENV variable names instead — handoff
   documents live long and get copied to unknown places.
 
-```markdown
+````markdown
 # Handoff — {task title}
 
 **Last updated**: {YYYY-MM-DD HH:MM}
@@ -75,7 +82,7 @@ Additional rules:
 
 ## Running work
 
-Work that keeps running after the session ends. If none, `_(none)_`.
+Work that keeps running after the session ends.
 
 | Task | Identifier | Status check | When done |
 |------|------------|--------------|-----------|
@@ -146,11 +153,10 @@ preferences, ...}
 
 ## References
 
-_(only when related design docs/plans/other handoffs exist — otherwise
-omit the section entirely)_
+_(omit this section when there is nothing to list)_
 
 - {path — one line on what it is}
-```
+````
 
 ### 4. Save and announce
 
@@ -164,41 +170,20 @@ omit the section entirely)_
 
 ## Update logic (업데이트 로직)
 
-When a HANDOFF.md already exists, sections are handled differently.
+When a HANDOFF.md already exists:
 
-**Overwrite (reflect the current state)**
-- Next steps
-- Running work
-- Open questions
-- Goal
-- Verification status
-- Repro commands
-- Changed files
-- Cautions
-- The header's last-updated / branch
-
-**Append-only (history accumulates)**
-- Decision and attempt log — add the newest entry at the top. Never
-  delete or modify previous entries.
-
-**Custom sections (outside the template)**
-- Sections added by previous sessions (measurement tables, domain
-  summaries, reference material, ...) stay as-is while still valid;
-  update only what needs updating.
-- Remove only when invalidated, and leave a one-line note in the
-  decision log that it was removed.
+- Overwrite every template section and the header with the current
+  state. The one exception is the decision and attempt log, which is
+  append-only with the newest entry on top. If the log was split into
+  `HANDOFF-history.md`, append there and keep one line in References
+  pointing to it.
+- Custom sections added by previous sessions (measurement tables,
+  domain summaries, reference material) stay as-is while still valid;
+  update only what changed. Remove one only when invalidated, and leave
+  a one-line note in the decision log.
 
 ## Length guide (분량 가이드)
 
 A long handoff gets skipped by the next agent. Target **200 lines
 total**. Beyond that, consider splitting the decision log into a
 separate file (`HANDOFF-history.md`).
-
-## When triggered, confirm (트리거되었을 때 확인할 것)
-
-- Whether the user means "everything" or "one specific task" — with
-  multiple parallel tasks, confirm which one to hand off.
-- If a HANDOFF.md exists but covers unrelated work, create a new file
-  (`HANDOFF-<topic>.md`).
-- Record half-done work honestly as "not run" in the verification
-  table — the next agent must not build on a broken foundation.

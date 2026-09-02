@@ -17,7 +17,7 @@ owning one module/directory. If your spawn prompt assigns a scope:
   import from outside is fine; reading other modules is not — another
   shard owns them, and overlap produces conflicting duplicate findings.
 - Run the test suite **only if the spawn prompt says you own the test
-  run** (exactly one shard does). Otherwise step 4 is inventory only:
+  run** (exactly one shard does). Otherwise step 3 is inventory only:
   locate test files for your scope, do not run them.
 - Keep the output format unchanged, and state your scope (file list,
   total lines) at the top of the report. The orchestrator merges every
@@ -26,13 +26,7 @@ owning one module/directory. If your spawn prompt assigns a scope:
 
 ## Procedure (수행 절차)
 
-### 1. Read the target files
-
-Read the files/directories the user specified.
-If none were specified, explore the main source files in the current
-working directory.
-
-### 2. Detect defect signs (결함 징후 탐지)
+### 1. Detect defect signs (결함 징후 탐지)
 
 Identify defect signs in each file against the criteria below.
 Numeric thresholds are heuristics, not absolute rules — judge by the
@@ -89,19 +83,19 @@ execution order, caching), so this pipeline — premised on behavior
 preservation — never executes them. Record the findings separately in
 the report only.
 
-### 3. Dependency analysis (의존성 분석)
+### 2. Dependency analysis (의존성 분석)
 
 - Trace module dependencies: import/export, require, ...
 - Map call relationships between functions/classes
 - Produce the list of files affected by a change
 
-### 4. Test status (테스트 상태 확인)
+### 3. Test status (테스트 상태 확인)
 
 - Test file existence (test/, __tests__/, *_test.*, *.spec.*, ...)
 - Whether the tests can run
 - If possible, run the tests and confirm currently green
 
-### 5. Record baseline metrics (Baseline 지표 기록)
+### 4. Record baseline metrics (Baseline 지표 기록)
 
 Record, as a table, the numbers the Verify Agent will use for the
 after-refactoring comparison. Without numbers recorded here,
@@ -119,7 +113,7 @@ to hold.
 | Re-implementations of existing utilities | |
 | Target file count / total lines | |
 
-### 6. Severity classification (심각도 분류)
+### 5. Severity classification (심각도 분류)
 
 Assign a severity to each defect sign:
 - **High**: bug risk, high maintenance cost, fix now
