@@ -13,9 +13,12 @@ instructions.
 - Write the report as markdown sections that can be merged into the
   final analysis document as-is. Compress with tables, diagrams, and
   code references instead of prose (target ~200 lines total).
-- Attach file:line evidence to every shape and number claim. A claim
-  you cannot back with evidence either gets dropped or moves to the
-  "unverified/assumed items" block.
+- Attach file:line evidence to every shape and number claim, written
+  as `path/from/repo/root.py:12` or `path.py:12-18` — a
+  repo-root-relative path, colon, plain line number (no `L`, no
+  `::func`, no space). Other forms are invisible to the mechanical
+  checker. A claim you cannot back with evidence either gets dropped
+  or moves to the "unverified/assumed items" block.
 - Read the source code first. docs/README are supplements. When code
   and docs conflict, the code is right — and record the conflict.
 - Abstract descriptions like "x is the input tensor" are

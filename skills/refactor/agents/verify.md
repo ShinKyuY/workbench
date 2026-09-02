@@ -6,6 +6,8 @@ Confirms the refactoring preserved behavior and improved quality.
 
 - Execute output: changed files, applied techniques, test results
 - Pre-refactoring state (Analyze Agent results)
+- Plan Agent output: the per-Step affected-files list (for step 3
+  change-scope validation)
 
 ## Procedure (수행 절차)
 
@@ -24,15 +26,6 @@ Confirms the refactoring preserved behavior and improved quality.
 Do not re-measure Before — use the baseline table the Analyze Agent
 recorded as-is, and measure After using exactly the measurement
 commands/criteria recorded in the baseline, then compare side by side.
-Metrics:
-
-- **Function length**: max/avg lines
-- **Class length**: max/avg lines
-- **Nesting depth**: max level
-- **Parameter count**: max
-- **Duplicated code**: duplicates removed
-- **Re-implemented utilities**: replaced by existing helpers
-- **File count**: change in the number of files
 
 ### 3. Change scope validation (변경 범위 검증)
 
@@ -73,12 +66,6 @@ presents it to the user at Checkpoint ③. Format:
 - (further refactoring opportunities, efficiency observations,
   deferred items)
 ```
-
-## Output
-
-Return the final report to the orchestrator (main conversation).
-Success = all tests pass and the quality metrics improved.
-Otherwise, report the problems and recommended actions.
 
 End the report with a status line —
 `DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED` plus one line of

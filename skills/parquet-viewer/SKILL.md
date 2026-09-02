@@ -28,10 +28,8 @@ timeout.
 1. Run with the available background/session mechanism. In Claude Code,
    use Bash `run_in_background: true`; in Codex, start it as a
    long-running exec session and keep the session id.
-2. Find the `READY http://<host>:<port>` line in the output.
-   (If the port is taken, the script probes the next one automatically,
-   so the actual port may differ from the requested one — always check
-   the URL on the READY line.)
+2. Find the `READY http://<host>:<port>` line in the output. The port
+   may differ from the requested one if it was taken.
 3. Tell the user the actual URL. The browser opens automatically by
    default.
 
@@ -44,12 +42,9 @@ python3 <skill-dir>/scripts/parquet_viewer.py data.parquet
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--port`, `-p` | Starting port (probes +1 at a time if in use) | `8765` |
-| `--host` | Bind host. Keep local unless sharing is intentional | `127.0.0.1` |
+| `--host` | Bind host. Use `0.0.0.0` only when the user needs access from another machine or container. The READY line then still prints `127.0.0.1`, so give the user this machine's address with that port | `127.0.0.1` |
 | `--rows`, `-n` | Read only the first N rows — fast, no full load | all |
 | `--no-open` | Disable auto-opening the browser | auto-open |
-
-The viewer binds to `127.0.0.1` by default. Use `--host 0.0.0.0` only
-when the user explicitly needs access from another machine or container.
 
 ## Large files
 

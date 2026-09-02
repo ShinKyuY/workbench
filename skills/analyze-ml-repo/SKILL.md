@@ -19,22 +19,9 @@ Write the document and chat summary in the conversation language;
 section structure, code identifiers, and tensor-shape notation stay
 the same.
 
-## Core principles (핵심 원칙)
-
-1. **Code first, docs second**: read the source code first;
-   docs/README are supplements.
-2. **Concrete examples required**: include confirmed data examples,
-   tensor shapes, and code line references instead of abstract
-   descriptions. If a value is inferred from schema/code rather than
-   observed in data, label it as inferred; if unavailable, say so.
-3. **Dispatch only the subagents needed**: pick the roles that match
-   the request scope, scale the instance count to the targets found
-   in the repo (Step 2), and dispatch them concurrently.
-4. **Orchestrator role**: the main agent synthesizes subagent
-   results, fills the gaps, and assembles the final document.
-5. **Deliverables match scope**: for narrow questions, answer in chat
-   with file:line evidence. For broad analysis, save a markdown
-   document and present only a summary plus the `.md` path in chat.
+Every shape or number claim carries file:line evidence and is
+labeled confirmed, inferred, or unavailable. Read code first; docs
+are supplements.
 
 ## Output mode routing (출력 방식 라우팅)
 
@@ -148,10 +135,9 @@ row = one agent with its own file list.
   means analyzing one tells you nothing about the other (separate
   model families, unrelated dataset pipelines, disjoint training
   entry points). E.g. models `interformer` + `wukong` in scope →
-  2 model-architecture instances, each with its own files.
+  2 model-architecture instances, 6 agents total, one over the
+  default budget and justified by the two families.
 - structure-scout fans out the same way for monorepo subprojects.
-- A fan-out of 1 everywhere is the normal case. Most repos need the
-  default 5 or fewer; fan out only when the inventory forces it.
 
 Agent budget (예산) — these are full readers, not cheap verifiers:
 - Default budget **5 agents** per analysis; exceed it only when
@@ -163,12 +149,6 @@ Agent budget (예산) — these are full readers, not cheap verifiers:
   overflow is large — go back to the user through the available
   question mechanism to narrow the scope.
 
-Worked example: "analyze the whole structure" + recon found
-independent models `interformer`/`wukong` → structure-scout ×1,
-model-architecture ×2, data-pipeline ×1, training-workflow ×1,
-inference-analyst ×1 = 6 agents, one over the default budget,
-justified by the two independent model families.
-
 ---
 
 ## Step 3: Dispatch specialist subagents in parallel (병렬 투입)
@@ -176,8 +156,7 @@ justified by the two independent model families.
 Dispatch the Step 2 plan **concurrently** — one agent per plan row.
 Give each agent the concrete file paths of its own row's target.
 
-Agent definitions live in the `agents/` directory. Read each agent
-file before dispatching and include its content in the prompt.
+Agent definitions live in `agents/`.
 
 | # | Agent | File | subagent_type | Role |
 |---|-------|------|---------------|------|
@@ -205,13 +184,12 @@ What goes into each agent's prompt:
    self-review)
 7. For shape-heavy agents (model-architecture, data-pipeline), the
    tactics in `references/shape-tracing.md`.
-
-Items 5 and 6 go to **every dispatched agent**. Omitting them gets
-you diagrams with no rules and reports that cannot be verified.
+8. The user's original request, quoted verbatim — the report
+   contract keys the report language off it.
 
 Subagent execution protocol (실행 프로토콜):
-- **Subagents know nothing about this conversation.** Items 1–7
-  above must all be in the prompt.
+- **Subagents know nothing about this conversation.** The prompt
+  carries everything above; items 5, 6 and 8 go to every agent.
 - Parallel dispatch only works when all Agent calls are sent
   **in a single message**.
 - Name spawned agents so the role is visible: `ml-structure-scout`,
@@ -291,6 +269,9 @@ open the document with one line stating what is and is not covered.
 output. Owned by structure-scout. The inference-only sub-pipeline
 belongs in section 4, owned by inference-analyst — do not duplicate
 the whole-system flow there.)
+### Project structure and entry points
+(Directory map, CLI commands and the Job/Runner each invokes,
+hyperparameter catalog by category. Owned by structure-scout.)
 
 ## 1. Data pipeline
 ### 1-1. Raw data schema
@@ -299,16 +280,17 @@ the whole-system flow there.)
 ### 1-4. Concrete data examples (raw rows, batch tensors)
 
 ## 2. Model architecture
-### 2-1. Config summary table
+### 2-1. Constructor parameter table (actual config values; owned by model-architecture)
 ### 2-2. Forward pass shape trace (line by line)
 ### 2-3. Core block analysis (with visualizations)
-### 2-4. Loss function (formula + shapes)
 
 ## 3. Training workflow
-### 3-1. Training setup (optimizer, scheduler, precision)
-### 3-2. Distributed training setup
-### 3-3. Checkpoint structure
-### 3-4. CLI run examples
+### 3-1. Loss function (formula + shapes)
+### 3-2. Training setup (optimizer, scheduler, precision)
+### 3-3. Distributed training setup
+### 3-4. Checkpoint structure
+### 3-5. Evaluation (metrics, cadence)
+### 3-6. CLI run examples
 
 ## 4. Inference & outputs
 (Inference-only sub-pipeline diagram lives here, owned by
@@ -345,14 +327,3 @@ inference-analyst — not the whole-system flow.)
    few main findings) and the `.md` file path. Do not paste the full
    document back into the chat.
 4. Create additional formats only when the user explicitly asks.
-
----
-
-## Cautions during analysis (주의사항)
-
-1. **The docs-only trap**: explicitly instruct subagents to "read
-   the full source code"; `references/report-contract.md` enforces
-   the report-quality rules on them.
-2. **Reports are claims, not evidence**: nothing enters the document
-   without Step 4 verification and the Step 5 mechanical check. The
-   code is the ground truth.

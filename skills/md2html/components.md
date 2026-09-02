@@ -1,6 +1,6 @@
 # md2html — Component Catalog
 
-This file is the **single source of truth** for the HTML snippets you (the AI) must use when filling `template.html`.
+This file is the **single source of truth** for the HTML snippets you (the AI) must use for `content.html`; `scripts/build.py` merges it into `template.html`.
 
 **Rules:**
 - Copy snippets verbatim, only replace the bracketed `{{...}}` placeholders.
@@ -11,9 +11,10 @@ This file is the **single source of truth** for the HTML snippets you (the AI) m
 
 ## Language label table
 
-The HTML's `<html lang="...">` attribute MUST be `ko` for Korean sources and `en` for everything else. The "Recommended" badge label is set via the `--rec-label` CSS variable on `<html>`.
+The HTML's `<html lang="...">` attribute MUST be `ko` for Korean sources and `en` for everything else. The "Recommended" badge label is set via the `--rec-label` CSS variable on `<html>`. Both come from `meta.json` (`LANG`, `REC_LABEL`).
 
 ```html
+<!-- what build.py produces from meta.json LANG / REC_LABEL — do not write this yourself -->
 <!-- example: Korean source -->
 <html lang="ko" data-theme="light" style="--rec-label: '★ 추천'">
 
@@ -61,7 +62,7 @@ The HTML's `<html lang="...">` attribute MUST be `ko` for Korean sources and `en
 
 ## 1. Title block (in `<header class="doc-header">`)
 
-Replace `{{TITLE}}`, `{{SUBTITLE}}`, `{{DOC_TYPE}}`, `{{SOURCE_FILE}}`, `{{DATE}}`, `{{READ_TIME}}` in `template.html`.
+These values go into `meta.json` (keys `TITLE`, `SUBTITLE`, `DOC_TYPE`, `SOURCE_FILE`, `DATE`, `READ_TIME`); `build.py` substitutes them into the header. Do not edit `template.html`.
 
 - `{{DOC_TYPE}}` examples: `PLAN`, `SPEC`, `SYSTEM DESIGN`, `RFC`, `NOTES`, `RUNBOOK`, `POSTMORTEM`.
 - `{{READ_TIME}}` format: `~5 min read` / `~5분 소요` (estimate ~250 words/minute; Korean: ~500 characters/minute).
@@ -502,7 +503,7 @@ Apply these heuristics while reading the source `.md`:
 The title auto-wraps (`text-wrap: balance`) with responsive `clamp(28px, ...)` font-size. Nothing extra needed.
 
 ### 14f. Empty TOC (source has no H2)
-JS auto-hides `<aside class="toc">` when `#toc-nav` has no links. Nothing extra needed.
+Wrap the body in one `<h2 id="content">` (see SKILL.md Edge cases) so the TOC has one entry, or omit `--toc` and pass `--no-toc` to `build.py` — it strips the sidebar and the mobile trigger. `build.py` rejects an empty `toc.html`; the JS auto-hide of `<aside class="toc">` only applies in the manual fallback (no `python3`).
 
 ### 14g. Long URLs / identifiers
 `.content` already has `overflow-wrap: anywhere` — long URLs/identifiers wrap without breaking the layout.

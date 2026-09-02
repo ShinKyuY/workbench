@@ -108,9 +108,9 @@ You write three small part files; `scripts/build.py` merges them into `template.
    # short doc without a sidebar: omit --toc and add --no-toc
    ```
 
-   It substitutes placeholders, injects your fragments, then verifies: no leftover `{{PLACEHOLDER}}`, every anchor resolves to an `id`, mermaid blocks start with a supported diagram type (`flowchart`, `sequenceDiagram`, `erDiagram`, `stateDiagram-v2`, `gantt`, `classDiagram`, `journey`, `pie`, `timeline` — the full set is `build.py`'s `MERMAID_TYPES`; never bare `graph`), no emoji glyphs, balanced math delimiters (`\(`/`\)`, even `$$` count), and no math-like unicode squeezed into `<code>` spans. On `BUILD FAILED`, fix the named problem in your part file and re-run. On `BUILD OK`, delete the `.md2html-parts/` directory.
+   It substitutes placeholders, injects your fragments, then verifies: no leftover `{{PLACEHOLDER}}`, every anchor resolves to an `id`, mermaid blocks start with a supported diagram type (`flowchart`, `sequenceDiagram`, `erDiagram`, `stateDiagram-v2`, `gantt`, `classDiagram`, `journey`, `pie`, `timeline` — the full set is `build.py`'s `MERMAID_TYPES`; never bare `graph`), no emoji glyphs, balanced math delimiters (`\(`/`\)`, even `$$` count), and no math-like unicode squeezed into `<code>` spans. On `BUILD FAILED`, fix the named problem in your part file and re-run. If the math-glyph check flags a `<code>` span that is genuinely code (a unit like `10μs`, a variable named `λ`), re-run with `--allow-unicode-math-in-code` instead of rewriting it as math. On `BUILD OK`, delete the `.md2html-parts/` directory.
 
-   **Fallback** — if `python3` is unavailable in your environment: read `template.html`, build the full output buffer in memory (placeholders + TOC + content slot between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`), `Write` once, and run the Step 4 checks manually by re-reading your generated sections.
+   **Fallback** — if `python3` is unavailable in your environment: read `template.html`, build the full output buffer in memory (placeholders + TOC + content slot between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`), `Write` once, and run the checks listed above (leftover placeholders, anchors, mermaid types, emoji, math delimiters, math glyphs in `<code>`) manually by re-reading your generated sections.
 
 ### Step 4 — Report
 
@@ -159,7 +159,7 @@ gracefully offline; no npm/pip install.
 ## Anti-patterns
 
 - ❌ Re-typing `template.html` into the output (or assembling it via many Edit calls) — slow, expensive, and one typo silently breaks CSS/JS. Always go through `scripts/build.py`.
-- ❌ Adding new CSS via `<style>` — extend `template.html` instead and tell the user.
+- ❌ Adding new CSS via `<style>` or editing `template.html` — use only the classes in `components.md`. If a style is truly missing, tell the user so it can be added to the template.
 - ❌ Translating proper nouns or code identifiers.
 - ❌ "Improving" the source by adding info not in the original.
-- ❌ Reporting success without running Step 4 verification.
+- ❌ Reporting success without `BUILD OK` from `build.py` (or, in the fallback, the manual Step 3 checks).

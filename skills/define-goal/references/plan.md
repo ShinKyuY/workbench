@@ -1,4 +1,4 @@
-# Plan/Spec Writing Standard — 복잡한 목표의 계획 기준
+# Plan Writing Standard — 복잡한 목표의 계획 기준
 
 The goal (`goal.md`) is the frozen success authority. The plan
 (`plan.md`) is the living execution document the executor writes
@@ -14,9 +14,8 @@ A frozen goal alone tells the agent *what* must be true, but on long
 work each step's *approach* gets re-derived from scratch — agents drift,
 redo decisions, or silently switch approach mid-run. A referenced plan
 pins those decisions between sessions while the goal stays the only
-authority on success. There is no separate spec file: the spec —
-interface and contract decisions — lives in the plan's `Decisions:`
-section (rule 4 below).
+authority on success. Interface and contract decisions live in the
+plan's `Decisions:` section (rule 4 below).
 
 ## Quality rules (품질 규칙)
 
