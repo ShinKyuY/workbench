@@ -1,7 +1,7 @@
 {
   "name": "workbench",
   "description": "define-goal: 모호한 의도를 측정하고 검증할 수 있는 목표로 변환, handoff: 세션 인수인계 문서화, analyze-ml-repo: ML 레포 구조와 데이터 흐름 분석, refactor: 안전한 리팩토링 파이프라인, md2html: Markdown→테마 HTML (KaTeX 수식, 네이티브 다이어그램, 와이어프레임), parquet-viewer: Parquet 브라우저 뷰어",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "author": {
     "name": "ky.shin",
     "email": "p37329@gmail.com"
