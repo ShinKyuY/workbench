@@ -89,11 +89,17 @@ the report only.
 - Map call relationships between functions/classes
 - Produce the list of files affected by a change
 
-### 3. Test status (테스트 상태 확인)
+### 3. Check commands (검사 명령 확인)
 
 - Test file existence (test/, __tests__/, *_test.*, *.spec.*, ...)
-- Whether the tests can run
-- If possible, run the tests and confirm currently green
+- Locate the project's check commands in package.json scripts,
+  pyproject/Makefile/justfile targets, or CI config: **test**,
+  **typecheck** (tsc, mypy, pyright, cargo check, go vet, ...),
+  **build**, **lint**
+- Run each one that exists and record exit status and warning count.
+  Tests must be currently green. These commands are what Execute runs
+  after every Step and what Verify compares against, so record them
+  verbatim
 
 ### 4. Record baseline metrics (Baseline 지표 기록)
 
@@ -112,6 +118,9 @@ to hold.
 | Duplicated code blocks | |
 | Re-implementations of existing utilities | |
 | Target file count / total lines | |
+| Test command / result (N passed, M failed) | |
+| Typecheck / build command / exit status | |
+| Lint command / warning count | |
 
 ### 5. Severity classification (심각도 분류)
 
@@ -127,7 +136,7 @@ Return the analysis in this structure:
 ```
 Defect sign list (by severity)
 Dependency map (blast radius)
-Test status and coverage
+Check commands (test / typecheck / build / lint) and their current results
 Baseline metrics table (including measurement method)
 Efficiency observations (report-only — not Step material)
 Refactoring priority recommendations

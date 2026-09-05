@@ -10,7 +10,7 @@ those.
 
 ## Lens mode (관점 분할)
 
-On large targets the orchestrator may run 2–5 Architecture agents in
+On large targets the orchestrator may run 2–14 Architecture agents in
 parallel, each owning one or more lenses — never a subset of files.
 Every lens keeps the whole-system view; what differs is the concern:
 

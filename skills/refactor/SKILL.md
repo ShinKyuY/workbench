@@ -25,8 +25,8 @@ cost in itself; too little leads to behavior-change accidents.
 | Size | Example | Approach |
 |------|---------|----------|
 | **Small** (소규모) | 1–2 functions, part of one file | Run Phase 1 inline, quickly (skip Phase 2). Share the analysis summary + a 3–5 line plan, then execute → verify unless an approval gate below applies |
-| **Medium** (중규모) | 1–3 files | Full pipeline, with subagents |
-| **Large** (대규모) | Module/package level | Full pipeline + architecture review required. Shard Phase 1 into scoped agents (see "Dynamic fan-out"). Per-phase user agreement, propose splitting into multiple PRs |
+| **Medium** (중규모) | 1–3 files | Full pipeline **inline**: perform each phase in the main conversation following the same `agents/*.md` procedures and artifacts. Phase 2 only when the target crosses a module boundary. Combine Checkpoints ① and ② |
+| **Large** (대규모) | Module/package level | Full pipeline **with subagents** + architecture review required. Shard Phase 1 into scoped agents (see "Dynamic fan-out"). Per-phase user agreement, propose splitting into multiple PRs |
 
 If the request is review-only ("review the architecture", "구조 점검해줘"),
 run Phase 1+2 and stop at the report. Execute only when the user asks.
@@ -55,7 +55,8 @@ wrong target or produce results that cannot be compared:
 
 - **Subagents know nothing about this conversation.** The spawn prompt
   must include: (1) the absolute path of the agent file to read,
-  (2) target file/directory paths, (3) the project's test command,
+  (2) target file/directory paths, (3) the project's check commands —
+  test, plus typecheck / build / lint where the project has them,
   (4) constraints and priorities the user mentioned, (5) the expected
   output format (the "Output format" section of each agent file),
   (6) the artifacts the agent file's "Input" section names, pasted in
@@ -84,23 +85,25 @@ wrong target or produce results that cannot be compared:
   re-check in the main conversation (a test command's exit status,
   `git diff --stat` against the planned scope), re-check before acting
   on the report.
-- **If subagents are unavailable** (no nested agents, etc.), read the same
-  agent file directly and perform the phases inline, sequentially. The
-  pipeline's value is phase separation, not parallelism — keep the phases
-  and their artifacts identical even when inline.
+- **Inline execution** (Medium by default, or when subagents are
+  unavailable): read the same agent file directly and perform the phases
+  inline, sequentially. The pipeline's value is phase separation, not
+  parallelism — keep the phases and their artifacts identical even when
+  inline. Subagents pay off only when a phase must read more than the
+  main conversation should hold (Large).
 
 ## Dynamic fan-out (동적 분할)
 
 One subagent per phase is the default, not a fixed rule. Scale the count
 to the target, with two failure modes in mind: a single agent skimming
-50 files produces shallow findings everywhere, while a dozen shards
-produce a merge problem worse than the analysis itself. The band below
+50 files produces shallow findings everywhere, while far more shards
+than modules produce a merge problem worse than the analysis itself. The band below
 keeps both out.
 
 | Phase | Default | May become | When |
 |-------|---------|------------|------|
-| 1 Analyze | 1 agent | 2–5 scoped shards (hard cap 5) | Large target spanning 2+ module/directory boundaries, roughly 10+ files |
-| 2 Architecture | 1 agent | 2–5 lens agents, whole view each (hard cap 5) | Large target; split by lens, never by scope |
+| 1 Analyze | 1 agent | 2–14 scoped shards (hard cap 14) | Large target spanning 2+ module/directory boundaries, roughly 10+ files |
+| 2 Architecture | 1 agent | 2–14 lens agents, whole view each (hard cap 14) | Large target; split by lens, never by scope |
 | 3 Plan | 1 agent | never sharded | — |
 | 4 Execute | 1 per Step, sequential | never parallel | — |
 | 5 Verify | 1 agent | 2 (test run ∥ metrics) | slow test suite or large baseline table |
@@ -110,7 +113,7 @@ keeps both out.
 - **Split along module/directory boundaries**, never by file count
   alone. Duplication and Feature Envy are visible only when related
   files share one scope — an arbitrary split hides exactly the signs
-  Phase 1 exists to find. If the natural boundaries give more than 5
+  Phase 1 exists to find. If the natural boundaries give more than 14
   scopes, group adjacent modules rather than raising the cap.
 - Each shard gets the same `agents/analyze.md`, an explicit file list
   for its scope, and the same output format — uniform shape is what
@@ -138,12 +141,12 @@ only at this merge.
 **Phase 2 splits by lens, never by scope:** circular dependencies,
 layer violations, and coupling exist only in the whole-system view — a
 module-scoped shard destroys the very signal it looks for. When a Large
-target is too much for one agent, fan out into 2–5 **lens agents**
-(hard cap 5), each given the **whole** target but a single concern:
+target is too much for one agent, fan out into 2–14 **lens agents**
+(hard cap 14), each given the **whole** target but a single concern:
 dependencies / SOLID / anti-patterns / layering / extensibility
 (definitions in architecture.md "Lens mode"). Hand each agent the
 module inventory and entrypoints — Phase 2 reads import graphs, not
-every line, so reading the same structure up to 5 times is acceptable.
+every line, so reading the same structure up to 14 times is acceptable.
 
 **Why Phase 4 never parallelizes:** each green test run is the safety
 gate for the next Step. Parallel Steps racing one working tree turn
@@ -159,10 +162,12 @@ starting Phase 4:
    commit/stash first.
 2. **Not a git repository** — create backup copies of the target files
    and tell the user before proceeding.
-3. **No tests** — propose writing characterization tests first (how:
-   `references/characterization-testing.md`, read when the target has no
-   test coverage). If the user wants to proceed without tests, slice each
-   Step smaller and add manual verification points.
+3. **No tests** — decided at Checkpoint ①, not here: ask the user
+   whether the plan should open with **Step 0 — characterization tests**
+   (`references/characterization-testing.md`; `agents/plan.md` "When
+   there are no tests"). If the user declines, the plan slices each Step
+   smaller and names the alternative check per Step (check commands plus
+   fixed-input entrypoint runs — see `agents/execute.md`).
 
 ---
 
@@ -185,8 +190,9 @@ targets, 2–5 scoped shards of it (see "Dynamic fan-out"). It covers:
   observable behavior, so they never become Steps; they are delivered
   only as recommendations in the final report.
 - **Dependency mapping** — import/call relationships, blast radius
-- **Test status** — existence; run them and confirm currently green.
-  If there are no tests, always tell the user.
+- **Check commands** — locate the project's test, typecheck, build and
+  lint commands; run each and record exit status and warning counts in
+  the baseline. If there are no tests, always tell the user.
 - **Baseline metrics** — function length, nesting depth, parameter count,
   duplication count, etc. Phase 5 compares against this table; without
   numbers recorded here, "it improved" cannot be proven.
@@ -220,7 +226,9 @@ cross-shard dedup — see "Dynamic fan-out"). Then merge the two result
 sets before reporting — findings
 pointing at the same file:line or the same mechanism (e.g. Analyze's God
 Class and Architecture's God Object) are combined into one, keeping the
-more concrete evidence.
+more concrete evidence. If the Analyze report says the target has no
+tests, this checkpoint also asks whether Step 0 (characterization tests)
+goes into the plan — see pre-flight check 3.
 
 Before reporting, **sample-verify each report**: open 2–3 of its cited
 file:line claims and compare against the code. If even one is wrong,
@@ -275,9 +283,12 @@ re-derive one. After the subagent reports green, verify before the
 checkpoint commit: `git diff --stat` must match the Step's
 affected-files list, and the test command must have actually run.
 
-Each Step applies one technique, runs the tests, and on green proposes
-an intermediate commit. Red means roll back and retry in smaller units.
-Procedure, per-technique note, and guardrails: `agents/execute.md`.
+Each Step applies one technique, runs the check commands (tests, plus
+typecheck/build when present), and on green proposes an intermediate
+commit. Red means roll back and retry in smaller units. Rename / Move /
+signature Steps additionally confirm the old identifier has no remaining
+references. Procedure, per-technique note, and guardrails:
+`agents/execute.md`.
 
 ---
 
@@ -299,7 +310,8 @@ Spawn the **Verify subagent** (`agents/verify.md`). It covers:
 
 **Checkpoint ③**: report the final summary (change summary, Before/After
 table, test results, remaining work) to the user. Format: see
-`agents/verify.md`.
+`agents/verify.md`. If Step 0 wrote characterization tests, ask whether
+to keep them as regression tests or remove them.
 
 ---
 
@@ -307,7 +319,7 @@ table, test results, remaining work) to the user. Format: see
 
 | Checkpoint | When | Skippable? |
 |------------|------|------------|
-| ① Analysis + review results | After Phase 2 | May combine with ② for small sizes |
+| ① Analysis + review results | After Phase 2 | Combined with ② for Small and Medium |
 | ② Execution plan | After Phase 3 | Never when a public API changes |
 | ③ Final results | After Phase 5 | No — always report |
 

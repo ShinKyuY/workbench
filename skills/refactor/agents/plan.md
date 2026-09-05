@@ -7,7 +7,9 @@ Builds a concrete refactoring execution plan from the analysis results.
 Analyze Agent output:
 - Defect sign list (with severity)
 - Dependency map
-- Test status
+- Check commands and test status
+- Whether the user agreed to Step 0 (characterization tests) at
+  Checkpoint ①, when the target has no tests
 
 Architecture review output (merged with the Analyze findings at
 Checkpoint ①):
@@ -72,12 +74,22 @@ For each Step:
 
 ### 5. When there are no tests
 
-When refactoring untested code:
-1. Propose writing characterization tests first — see
-   `references/characterization-testing.md` for the method (golden-value
-   capture, boundary inputs, approval pattern, re-run diff)
-2. If the user wants to proceed without tests, slice each Step smaller
-   and add manual verification points
+When the target has no tests and the user agreed at Checkpoint ①, the
+plan opens with a formal **Step 0 — Characterization tests**:
+- **Target**: every function/class a later Step touches
+- **Change**: pin current behavior per `references/characterization-testing.md`
+  — list the inputs per target (happy path, boundaries, branch drivers),
+  the capture method (golden value / approval snapshot), and where the
+  tests live
+- **Affected files**: the new test files only
+- **Rollback**: delete the test files
+Step 0 is its own commit. Its green run is the "Before" that Verify
+compares against; Execute re-records the test inventory after it.
+
+If the user declined Step 0, slice each Step smaller and name the
+**alternative check** in every Step: the check commands (typecheck,
+build, lint) plus an entrypoint run with fixed inputs whose output is
+diffed before/after. Verify reports this evidence level explicitly.
 
 ## Output format (출력 형식)
 
