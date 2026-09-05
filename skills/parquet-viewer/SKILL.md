@@ -62,6 +62,8 @@ python3 <skill-dir>/scripts/parquet_viewer.py -n 50000 big_data.parquet
 
 For a directory holding multiple `part-00000-*.parquet` files (Spark/
 HDFS output), pass the directory path as-is and everything is combined.
+Hive-style partition directories (`dt=2024-01-01/…`) expose their keys
+as columns.
 
 ```bash
 python3 <skill-dir>/scripts/parquet_viewer.py /tmp/my_table/
@@ -88,7 +90,9 @@ lsof -ti:<port> | xargs kill
 ## Viewer features
 
 - **Pagination**: 100 rows per page
-- **Search**: full text, or `column:value`
+- **Search**: full text, or `column:value`. Literal substring match, no
+  regex. If the text before the colon is not a column name, the whole
+  string is searched as full text (so `07:00` finds timestamps)
 - **Sort**: click a column header
 - **Column toggle**: show/hide only the columns you need
 - **Column types**: dtype shown in the header

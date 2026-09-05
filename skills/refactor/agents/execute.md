@@ -29,18 +29,34 @@ Each transform:
    - Never mix refactoring with functional changes
 
 2. Update references (renames, moves, signature changes)
+   - Search the whole repository for the old identifier (`rg` or the
+     available text-search tool). Code references must be 0; hits in
+     strings, config, or docs are judged one by one and recorded
 
-3. Run tests
-   - Run the project's test command
+3. Run the check commands
+   - Run the project's test command, and typecheck / build when the
+     project has them (they catch broken references in files the
+     tests never import)
    - Green → next Step
    - Red → roll back immediately, analyze the cause, retry in
      smaller units
+   - No test suite (user declined Step 0): run the alternative check
+     named in the Step — check commands plus the fixed-input entrypoint
+     run — and diff its output against the pre-Step run
 
 4. Record results
    - Files changed
    - Technique applied
-   - Test results
+   - Check results (tests, typecheck/build, old-identifier search)
 ```
+
+### Step 0 — characterization tests
+
+When the Step is Step 0, read `references/characterization-testing.md`
+first. Capture golden values on the inputs the plan lists, confirm the
+new tests pass on the untouched code, commit them, and re-record the
+test inventory (command, passed/failed counts) so later Steps and
+Verify compare against a baseline that includes them.
 
 ## Per-technique note
 

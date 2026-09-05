@@ -15,6 +15,11 @@ Confirms the refactoring preserved behavior and improved quality.
 
 - Run the full test suite
 - Compare test results before/after the refactoring
+- Characterization tests or approved snapshots from Step 0: re-run the
+  same inputs and report that the diff against the golden values is
+  zero
+- No suite at all (user declined Step 0): run the alternative checks
+  each Step named and report the evidence level as such
 - If any test newly fails:
   → a behavior change happened; find the cause
   → report it to the orchestrator (main conversation) and recommend
@@ -31,12 +36,15 @@ commands/criteria recorded in the baseline, then compare side by side.
 
 - Confirm the changed files are within the plan
 - Warn on unintended file changes
-- Check import/export relationships are intact
+- References intact: typecheck / build exit status from the baseline's
+  commands, and a repository-wide search for every identifier the Steps
+  renamed or moved (0 code hits)
 
 ### 4. Static analysis (when available)
 
 If the project has a linter/formatter configured:
-- Run lint and check for new warnings
+- Run the lint command recorded in the baseline and compare the warning
+  count against it
 - Check format-rule violations
 
 ### 5. Final report
@@ -61,6 +69,10 @@ presents it to the user at Checkpoint ③. Format:
 ### Test results
 - Total: N passed / M failed
 - vs. pre-refactoring: same/different
+- Typecheck / build: exit status vs. baseline
+- Lint warnings: N → M
+- Evidence level: test suite / characterization tests / alternative
+  checks only
 
 ### Remaining work
 - (further refactoring opportunities, efficiency observations,
@@ -70,5 +82,6 @@ presents it to the user at Checkpoint ③. Format:
 End the report with a status line —
 `DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED` plus one line of
 reason. Use DONE_WITH_CONCERNS when tests pass but a metric regressed or
-a scope deviation was found; BLOCKED when the test suite cannot run and
-behavior preservation therefore cannot be confirmed.
+a scope deviation was found, or when only alternative checks (no test
+suite) back behavior preservation; BLOCKED when neither a test suite nor
+the Step-level alternative checks could run.

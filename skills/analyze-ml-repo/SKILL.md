@@ -138,14 +138,14 @@ row = one agent with its own file list.
   means analyzing one tells you nothing about the other (separate
   model families, unrelated dataset pipelines, disjoint training
   entry points). E.g. models `interformer` + `wukong` in scope →
-  2 model-architecture instances, 6 agents total, one over the
-  default budget and justified by the two families.
+  2 model-architecture instances, 6 agents total, within the default
+  budget and justified by the two families.
 - structure-scout fans out the same way for monorepo subprojects.
 
 Agent budget (예산) — these are full readers, not cheap verifiers:
-- Default budget **5 agents** per analysis; exceed it only when
+- Default budget **8 agents** per analysis; exceed it only when
   independent targets force it, and say why in the plan.
-- Hard cap **8 agents** — never exceed it. Past the cap, never drop
+- Hard cap **14 agents** — never exceed it. Past the cap, never drop
   a target silently: either **group related targets** under one
   instance (one agent covers two small models) and record the
   grouping in the final document's assumptions, or — when the
@@ -321,11 +321,14 @@ inference-analyst — not the whole-system flow.)
      `docs/`) only when the user asks.
 2. Mechanically verify the saved document:
    `python3 <skill-dir>/scripts/verify_report.py <doc.md> --repo
-   <analyzed-repo-root>`. It checks every file:line citation (file
-   exists, line within file length) and lints Mermaid blocks
-   (direction stated, bracket labels quoted, subgraph/end balanced).
-   Fix failures by reopening the code — never by deleting evidence —
-   and re-run until it prints `result: OK`.
+   <analyzed-repo-root>`. It checks every file:line citation against
+   that tree only (file exists, line within file length; a bare
+   basename that matches several files is reported as ambiguous with
+   the candidates) and lints Mermaid blocks (direction stated, bracket
+   labels quoted, subgraph/end balanced). A failure that names
+   same-basename candidates is a missing path prefix — fix the cited
+   path; every other failure is fixed by reopening the code, never by
+   deleting evidence. Re-run until it prints `result: OK`.
 3. In chat, present only the key summary (end-to-end workflow plus a
    few main findings) and the `.md` file path. Do not paste the full
    document back into the chat.

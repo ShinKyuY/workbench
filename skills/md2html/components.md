@@ -359,7 +359,7 @@ For optional / deep-dive content the reader can skip.
 
 ## 10. Plain Markdown elements
 
-These render correctly out-of-the-box with the CSS in `template.html` — just use HTML equivalents:
+A section made only of these elements is **not hand-written**: paste its source Markdown between `<!-- MD -->` and `<!-- /MD -->` in `content.html` and `build.py` converts it (SKILL.md Step 3). The HTML equivalents below are for the few places where plain elements sit *inside* a component (a list in a callout, a table in a collapsible):
 
 | Markdown | HTML to write |
 |---|---|

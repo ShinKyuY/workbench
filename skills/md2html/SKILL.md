@@ -22,7 +22,7 @@ instead of numbered lists, callouts for the parts that matter.
 
 - `template.html`   — HTML skeleton with embedded CSS (Claude orange light+dark), Mermaid CDN, theme toggle, TOC sidebar, footer. Contains `{{PLACEHOLDER}}` strings and `<!-- COMMENT -->` slots. **Do NOT read this file** — its contract (placeholder list + content slots) is fully documented below, and `scripts/build.py` does the assembly. Reading 1,200 lines of CSS wastes context and tempts you to re-type it, which is the #1 source of drift and cost.
 - `components.md`  — catalog of HTML snippets you must copy verbatim (step cards, callouts, mermaid blocks, pros-cons, comparison cards, collapsibles). **Read this in full before writing content.** Do not invent CSS classes or skip the catalog.
-- `scripts/build.py` — assembler. Takes your metadata JSON + TOC fragment + content fragment, merges them into `template.html`, and verifies the result (leftover placeholders, broken anchors, mermaid syntax, emoji, math delimiters, math-as-code). You author content; it does the mechanics.
+- `scripts/build.py` — assembler. Takes your metadata JSON + TOC fragment + content fragment, converts the Markdown you pasted inside `<!-- MD -->…<!-- /MD -->` blocks (via `scripts/md_passthrough.py`), merges everything into `template.html`, and verifies the result (leftover placeholders, broken anchors, mermaid syntax and labels, raw `<` in math/code/mermaid, emoji, math delimiters, math-as-code; optional headless-Chrome render check). You author only the component sections; it does the mechanics.
 - `examples/`     — reference `<doc>.md` → `<doc>.html` pairs. Optional calibration: if unsure what good output looks like, read only the part of an example `.html` between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`.
 
 ## What you must do when invoked
@@ -70,7 +70,7 @@ Do this analysis silently in your head (or as one short summary line to the user
   - critical conclusion → Key-point highlight
   - warnings/decisions → Callouts
   - long appendix → Collapsible
-  - everything else → plain `<h2>` + `<p>`
+  - everything else → paste the source Markdown as an MD block (Step 3); `build.py` converts it
 
 ### Step 3 — Build the output HTML
 
@@ -92,29 +92,28 @@ You write three small part files; `scripts/build.py` merges them into `template.
    - `{{CLOSE_LABEL}}` → localized "Close" (used for the mobile TOC drawer close button): `Close` / `닫기`
    - `{{SKIP_LINK_LABEL}}` → localized skip-to-content link text: `Skip to content` / `본문 바로가기`
    - `{{FOOTER_NOTE}}` → localized source attribution: `Source: plan.md` / `소스: plan.md`
-2. **Write `<output-dir>/.md2html-parts/toc.html`** — one `<a>` per H2/H3 (see §2 in components.md). Generate stable kebab-case `id` from heading text. Skip this file for very short documents (see Edge cases).
-3. **Write `<output-dir>/.md2html-parts/content.html`** — the document body, section by section, using components from `components.md`. Each section must:
-   - Start with `<h2 id="..."> ` (matching the TOC entry).
-   - Use ONE primary component per logical chunk (don't stack 3 callouts in a row).
-   - Preserve original meaning — do not summarize away technical detail; condense only filler/repetition. md2html **restructures**, it does not **abridge**: a reader holding only the HTML must be able to reconstruct every claim, definition, derivation step, number, and caveat of the source. If a sentence feels "too detailed to keep", that's usually the sentence the author cared about most.
-   - Math follows Critical rule 2 (§15 in `components.md`).
-4. **Fidelity sweep** — before building, re-walk the source top-to-bottom against your `content.html` and check off: every display equation still a display equation, every inline formula still math, every table row, list item, numeric fact, file/column name, and cross-reference present. Fix gaps now — this catch-step is cheap, a thin output is a rewrite.
+2. **Write `<output-dir>/.md2html-parts/toc.html`** — one `<a>` per H2/H3 (see §2 in components.md). Heading ids follow one rule everywhere: lowercase, runs of non-alphanumerics → `-`, Hangul kept (`## 목표와 범위` → `목표와-범위`, `## Goals & scope` → `goals-scope`). Markdown blocks get their ids from this rule automatically; to pin one, write `## Title {#my-id}`. Skip this file for very short documents (see Edge cases).
+3. **Write `<output-dir>/.md2html-parts/content.html`** — the document body, section by section. For each H2 section decide once:
+   - **Component section** (flow, timeline, wireframe, cards, callout, pros-cons — anything from the §11 cheatsheet): hand-write HTML with the snippets in `components.md`. Start with `<h2 id="...">`, ONE primary component per logical chunk, math per Critical rule 2.
+   - **Everything else — the default**: paste the section's source Markdown **verbatim** between `<!-- MD -->` and `<!-- /MD -->`. `build.py` converts headings (with ids), paragraphs, lists, task lists, tables (≥ 4 columns get `.table-wrap`), code fences, blockquotes, inline code/bold/links, and math (`$…$` → `\(…\)`, `$$…$$` stays display). Raw HTML inside an MD block is escaped, not passed through. Never retype these sections as HTML by hand — transcription is where table rows and numbers get lost.
+   - Preserve original meaning in the component sections — do not summarize away technical detail; condense only filler/repetition. md2html **restructures**, it does not **abridge**: a reader holding only the HTML must be able to reconstruct every claim, definition, derivation step, number, and caveat of the source. If a sentence feels "too detailed to keep", that's usually the sentence the author cared about most.
+4. **Fidelity sweep** — before building, re-walk the source against the **component sections** of `content.html` (MD blocks are verbatim, so they need no sweep) and check off: every display equation still a display equation, every inline formula still math, every table row, list item, numeric fact, file/column name, and cross-reference present. Fix gaps now — this catch-step is cheap, a thin output is a rewrite.
 5. **Run the assembler** (script path relative to this SKILL.md):
 
    ```bash
    python3 <skill-dir>/scripts/build.py \
      --meta <parts>/meta.json --toc <parts>/toc.html \
-     --content <parts>/content.html --out <output>.html
+     --content <parts>/content.html --out <output>.html --render-check
    # short doc without a sidebar: omit --toc and add --no-toc
    ```
 
-   It substitutes placeholders, injects your fragments, then verifies: no leftover `{{PLACEHOLDER}}`, every anchor resolves to an `id`, mermaid blocks start with a supported diagram type (`flowchart`, `sequenceDiagram`, `erDiagram`, `stateDiagram-v2`, `gantt`, `classDiagram`, `journey`, `pie`, `timeline` — the full set is `build.py`'s `MERMAID_TYPES`; never bare `graph`), no emoji glyphs, balanced math delimiters (`\(`/`\)`, even `$$` count), and no math-like unicode squeezed into `<code>` spans. On `BUILD FAILED`, fix the named problem in your part file and re-run. If the math-glyph check flags a `<code>` span that is genuinely code (a unit like `10μs`, a variable named `λ`), re-run with `--allow-unicode-math-in-code` instead of rewriting it as math. On `BUILD OK`, delete the `.md2html-parts/` directory.
+   It converts the MD blocks, substitutes placeholders, injects your fragments, then verifies: no leftover `{{PLACEHOLDER}}`, every anchor resolves to an `id`, mermaid blocks start with a supported diagram type (`flowchart`, `sequenceDiagram`, `erDiagram`, `stateDiagram-v2`, `gantt`, `classDiagram`, `journey`, `pie`, `timeline` — the full set is `build.py`'s `MERMAID_TYPES`; never bare `graph`), mermaid labels with parentheses are quoted (`A["Service (v2)"]`) and no node is named `end`, no raw `<` inside math, `<pre><code>`, or mermaid (write `&lt;` — the browser otherwise parses `<y…` as a tag and the text vanishes), no emoji glyphs, balanced math delimiters (`\(`/`\)`, even `$$` count), and no math-like unicode squeezed into `<code>` spans. `--render-check` then loads the file in headless Chrome/Chromium/Edge and fails on any mermaid parse error, KaTeX error, or unrendered diagram — always pass it; when no browser is installed it prints "render check skipped" and the static checks stand alone. On `BUILD FAILED`, fix the named problem in your part file and re-run. If the math-glyph check flags a `<code>` span that is genuinely code (a unit like `10μs`, a variable named `λ`), re-run with `--allow-unicode-math-in-code` instead of rewriting it as math. On `BUILD OK`, delete the `.md2html-parts/` directory.
 
    **Fallback** — if `python3` is unavailable in your environment: read `template.html`, build the full output buffer in memory (placeholders + TOC + content slot between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`), `Write` once, and run the checks listed above (leftover placeholders, anchors, mermaid types, emoji, math delimiters, math glyphs in `<code>`) manually by re-reading your generated sections.
 
 ### Step 4 — Report
 
-`build.py` already verified the structure (that's its exit condition), so don't re-read the output file. Report back to the user with:
+`build.py` already verified the structure and, with `--render-check`, the rendering (that's its exit condition), so don't re-read the output file. Report back to the user with:
 - Output file path
 - 1-line summary of what changed (e.g. *"Rendered 7 sections: 1 mermaid flow, 2 step timelines, 4 callouts. ~6 min read."* — written in the conversation language)
 - A reminder they can open it with `xdg-open <file>.html` (Linux) / `open <file>.html` (mac).
