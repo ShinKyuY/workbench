@@ -602,7 +602,7 @@
     }
 
     /* ============================================================
-       MERMAID
+       SVG DIAGRAM
        ============================================================ */
     .diagram {
       background: var(--surface);
@@ -621,16 +621,48 @@
       color: var(--text-subtle);
       text-align: center;
     }
-    .mermaid { text-align: center; min-height: 80px; }
-    .mermaid svg { max-width: 100%; height: auto; }
-    .mermaid:not([data-processed]) {
-      opacity: 0.4;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--text-subtle);
-      white-space: pre-wrap;
-      text-align: left;
+    .dg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+    #dg-arrow path, #dg-dot circle { fill: var(--text-subtle); }
+    #dg-arrow-accent path { fill: var(--accent); }
+    #dg-arrow-muted path { fill: var(--border-strong); }
+    #dg-arrow-open path, #dg-crow-one path, #dg-crow-many path {
+      fill: none; stroke: var(--text-subtle); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
     }
+
+    svg.dg { display: block; max-width: 100%; height: auto; margin: 0 auto; font-family: var(--font-sans); overflow: visible; }
+    svg.dg text { fill: var(--text); font-size: 13px; text-anchor: middle; dominant-baseline: central; }
+    svg.dg text[text-anchor="start"] { text-anchor: start; }
+    svg.dg text[text-anchor="end"] { text-anchor: end; }
+    svg.dg .dg-sub { fill: var(--text-subtle); font-size: 11px; }
+
+    .dg-node > rect, .dg-node > polygon, .dg-node > path, .dg-node > ellipse, .dg-node > circle {
+      fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.5; stroke-linejoin: round;
+    }
+    .dg-node > line, .dg-node > polyline { fill: none; stroke: var(--border-strong); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .dg-external > rect { stroke-dasharray: 6 4; }
+    .dg-note > polygon { fill: var(--surface-2); stroke: var(--border); }
+    .dg-node-accent > rect, .dg-node-accent > polygon, .dg-node-accent > path, .dg-node-accent > ellipse { fill: var(--accent-soft); stroke: var(--accent); }
+    .dg-node-muted > rect, .dg-node-muted > polygon, .dg-node-muted > path, .dg-node-muted > ellipse { fill: var(--surface-2); stroke: var(--border); }
+    svg.dg .dg-node-muted text { fill: var(--text-subtle); }
+    .dg-status-success > rect, .dg-status-success > polygon, .dg-status-success > path, .dg-status-success > ellipse { fill: var(--success-soft); stroke: var(--success-border); }
+    .dg-status-warn > rect, .dg-status-warn > polygon, .dg-status-warn > path, .dg-status-warn > ellipse { fill: var(--warn-soft); stroke: var(--warn-border); }
+    .dg-status-danger > rect, .dg-status-danger > polygon, .dg-status-danger > path, .dg-status-danger > ellipse { fill: var(--danger-soft); stroke: var(--danger-border); }
+    .dg-state-start > circle { fill: var(--text-muted); stroke: none; }
+    .dg-state-end > circle + circle { fill: var(--text-muted); stroke: none; }
+    .dg-entity > .dg-entity-head { fill: var(--surface-2); }
+    svg.dg .dg-entity-title { font-weight: 600; }
+    svg.dg .dg-entity-row { text-anchor: start; font-family: var(--font-mono); font-size: 12px; fill: var(--text-muted); }
+
+    .dg-edge { fill: none; stroke: var(--text-subtle); stroke-width: 1.5; stroke-linejoin: round; }
+    .dg-edge-dashed { stroke-dasharray: 6 4; }
+    .dg-edge-accent { stroke: var(--accent); }
+    .dg-edge-muted { stroke: var(--border-strong); }
+    svg.dg .dg-edge-label { font-size: 12px; fill: var(--text-muted); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+
+    .dg-group > rect { fill: none; stroke: var(--border-strong); stroke-width: 1.5; stroke-dasharray: 6 4; }
+    svg.dg .dg-group-title { font-size: 12px; font-weight: 600; fill: var(--text-muted); text-anchor: start; }
+    .dg-lifeline { stroke: var(--border-strong); stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .dg-activation { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1.5; }
 
     /* ============================================================
        MATH (KaTeX)
@@ -1079,6 +1111,7 @@
       body { background: #fff; color: #000; }
       a { color: #000; }
       .content pre, .callout, .compare-card, .step, .diagram { break-inside: avoid; }
+      svg.dg { print-color-adjust: exact; }
       .doc-footer { break-before: avoid; }
     }
   </style>
@@ -1111,6 +1144,19 @@
     <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
     <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
     <symbol id="i-chevrons-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></symbol>
+  </svg>
+
+  <!-- SVG diagram markers (referenced by svg.dg via url(#dg-…)) -->
+  <svg class="dg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <marker id="dg-arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker>
+      <marker id="dg-arrow-accent" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker>
+      <marker id="dg-arrow-muted" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker>
+      <marker id="dg-arrow-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1 1L9 5L1 9"/></marker>
+      <marker id="dg-crow-one" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="16" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 8H16M10 2V14"/></marker>
+      <marker id="dg-crow-many" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="16" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 8H16M0 8L16 2M0 8L16 14"/></marker>
+      <marker id="dg-dot" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse"><circle cx="4" cy="4" r="3"/></marker>
+    </defs>
   </svg>
 
   <!-- Topbar -->
@@ -1149,7 +1195,7 @@
         </button>
       </div>
       <nav class="toc-nav" id="toc-nav">
-        <a href="#background" class="lvl-2">Background</a>
+                <a href="#background" class="lvl-2">Background</a>
 <a href="#goals" class="lvl-2">Goals</a>
 <a href="#proposed-architecture" class="lvl-2">Proposed architecture</a>
 <a href="#implementation-steps" class="lvl-2">Implementation steps</a>
@@ -1210,15 +1256,46 @@
       <h2 id="proposed-architecture">Proposed architecture</h2>
       <p>Producers (order-service, payment-service, …) emit events to Kafka. <code>notification-router</code> subscribes to topic <code>events.*</code> and routes each event to the appropriate channel (email/push/SMS) via a webhook to <code>notification-worker</code>. The worker delivers the notification and writes an audit log to Postgres.</p>
       <figure class="diagram">
-        <pre class="mermaid">
-flowchart LR
-  P1[order-service] --> K[/Kafka events.*/]
-  P2[payment-service] --> K
-  K --> R(notification-router)
-  R -->|webhook /notify| W(notification-worker)
-  W --> E[Email/Push/SMS]
-  W --> DB[(Postgres audit log)]
-        </pre>
+        <svg class="dg" viewBox="0 0 328 412" width="328" role="img" aria-label="order-service and payment-service emit events to Kafka; notification-router subscribes and calls notification-worker over a webhook, and the worker delivers Email/Push/SMS and writes an audit log to Postgres">
+          <g class="dg-node dg-process">
+            <rect x="8" y="8" width="136" height="44" rx="8"/>
+            <text class="dg-text" x="76" y="30">order-service</text>
+          </g>
+          <g class="dg-node dg-process">
+            <rect x="184" y="8" width="136" height="44" rx="8"/>
+            <text class="dg-text" x="252" y="30">payment-service</text>
+          </g>
+          <g class="dg-node dg-queue">
+            <polygon points="116,96 224,96 212,140 104,140"/>
+            <text class="dg-text" x="164" y="118"><tspan x="164" dy="-7">Kafka</tspan><tspan class="dg-sub" x="164" dy="16">events.*</tspan></text>
+          </g>
+          <g class="dg-node dg-process">
+            <rect x="80" y="184" width="168" height="44" rx="8"/>
+            <text class="dg-text" x="164" y="206">notification-router</text>
+          </g>
+          <g class="dg-node dg-process dg-node-accent">
+            <rect x="80" y="272" width="168" height="44" rx="8"/>
+            <text class="dg-text" x="164" y="294">notification-worker</text>
+          </g>
+          <g class="dg-node dg-process">
+            <rect x="16" y="360" width="128" height="44" rx="8"/>
+            <text class="dg-text" x="80" y="382">Email/Push/SMS</text>
+          </g>
+          <g class="dg-node dg-datastore">
+            <path d="M184 366 V398 A64 6 0 0 0 312 398 V366"/>
+            <ellipse cx="248" cy="366" rx="64" ry="6"/>
+            <text class="dg-text" x="248" y="385"><tspan x="248" dy="-7">Postgres</tspan><tspan class="dg-sub" x="248" dy="16">audit log</tspan></text>
+          </g>
+
+          <polyline class="dg-edge" points="76,52 76,74 140,74 140,96" marker-end="url(#dg-arrow)"/>
+          <polyline class="dg-edge" points="252,52 252,74 188,74 188,96" marker-end="url(#dg-arrow)"/>
+          <line class="dg-edge" x1="164" y1="140" x2="164" y2="184" marker-end="url(#dg-arrow)"/>
+          <text class="dg-edge-label" x="172" y="162" text-anchor="start">subscribe</text>
+          <line class="dg-edge dg-edge-accent" x1="164" y1="228" x2="164" y2="272" marker-end="url(#dg-arrow-accent)"/>
+          <text class="dg-edge-label" x="172" y="250" text-anchor="start">webhook /notify</text>
+          <polyline class="dg-edge" points="140,316 140,338 80,338 80,360" marker-end="url(#dg-arrow)"/>
+          <polyline class="dg-edge" points="188,316 188,338 248,338 248,360" marker-end="url(#dg-arrow)"/>
+        </svg>
         <figcaption class="diagram-caption">Event flow from producers through Kafka to the worker. The webhook between router and worker stays inside the VPC.</figcaption>
       </figure>
       <aside class="callout callout-info">
@@ -1359,6 +1436,7 @@ flowchart LR
         <p>Switching from polling to webhooks cuts <strong>99% of latency</strong> and <strong>60% of DB load</strong> in exchange for a moderate increase in operational complexity. A five-week plan with one week of monitoring before cutover keeps rollback safe.</p>
       </div>
 
+
 <!-- CONTENT_END -->
 
       <footer class="doc-footer">
@@ -1368,7 +1446,6 @@ flowchart LR
     </main>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <script>
@@ -1384,47 +1461,17 @@ flowchart LR
       if (saved) document.documentElement.dataset.theme = saved;
     })();
 
-    // ---------- Mermaid ----------
-    const diagramSources = new Map();
-    function initMermaid() {
-      const isDark = currentTheme() === "dark";
-      mermaid.initialize({
-        startOnLoad: false,
-        theme: "base", // custom themeVariables are only honored with the "base" theme
-        themeVariables: {
-          darkMode: isDark,
-          primaryColor: isDark ? "#3A2A22" : "#FBEEE6",
-          primaryTextColor: isDark ? "#F5F0E8" : "#1A1A1A",
-          primaryBorderColor: isDark ? "#E89572" : "#D97757",
-          lineColor: isDark ? "#9A938A" : "#6B6B66",
-          secondaryColor: isDark ? "#2A2520" : "#F5F5F0",
-          tertiaryColor: isDark ? "#221E1A" : "#FFFFFF",
-          fontFamily: "Inter, system-ui, sans-serif",
-        },
-      });
-    }
-    async function renderMermaid() {
-      initMermaid();
-      const els = document.querySelectorAll(".mermaid");
-      els.forEach(el => {
-        if (!diagramSources.has(el)) diagramSources.set(el, el.textContent.trim());
-        el.textContent = diagramSources.get(el);
-        el.removeAttribute("data-processed");
-      });
-      try { await mermaid.run({ nodes: els }); } catch (e) { console.error(e); }
-    }
     function toggleTheme() {
       const next = currentTheme() === "light" ? "dark" : "light";
       document.documentElement.dataset.theme = next;
       localStorage.setItem(STORAGE_KEY, next);
       applyThemeIcon();
-      renderMermaid();
     }
 
     // ---------- Math (KaTeX) ----------
     // Inline math: \( ... \)   Display math: $$ ... $$ or \[ ... \]
     // Single-$ is intentionally NOT a delimiter (literal dollar amounts stay safe).
-    // KaTeX auto-render skips <pre>/<code>, so code blocks and mermaid are untouched.
+    // KaTeX auto-render skips <pre>/<code>, so code blocks are untouched.
     function renderMath() {
       if (typeof renderMathInElement !== "function") return; // CDN unavailable → raw LaTeX degrades gracefully
       renderMathInElement(document.querySelector(".content") || document.body, {
@@ -1500,7 +1547,6 @@ flowchart LR
     // ---------- Copy-to-clipboard on <pre> ----------
     function injectCopyButtons() {
       document.querySelectorAll(".content pre").forEach(pre => {
-        if (pre.classList.contains("mermaid")) return;
         if (pre.querySelector(".copy-btn")) return;
         const btn = document.createElement("button");
         btn.type = "button";
@@ -1536,6 +1582,30 @@ flowchart LR
       onScroll();
     }
 
+    // ---------- SVG diagram check (read by build.py --render-check) ----------
+    function checkDiagrams() {
+      document.querySelectorAll("svg.dg").forEach(svg => {
+        let overflow = 0;
+        svg.querySelectorAll(".dg-node").forEach(node => {
+          if (node.matches(".dg-actor, .dg-state-start, .dg-state-end")) return;
+          const shape = node.querySelector(":scope > rect, :scope > polygon, :scope > ellipse, :scope > circle");
+          if (!shape) return;
+          const budget = shape.getBBox().width - 12;
+          node.querySelectorAll("text").forEach(t => {
+            const parts = t.querySelectorAll("tspan");
+            const lines = parts.length ? Array.from(parts) : [t];
+            if (lines.some(l => l.getComputedTextLength() > budget)) overflow++;
+          });
+        });
+        if (overflow) svg.dataset.dgOverflow = String(overflow);
+        const vb = svg.viewBox.baseVal, bb = svg.getBBox();
+        if (bb.x < vb.x || bb.y < vb.y || bb.x + bb.width > vb.x + vb.width || bb.y + bb.height > vb.y + vb.height) {
+          svg.dataset.dgClipped = "1";
+        }
+        svg.dataset.dgChecked = "1";
+      });
+    }
+
     // ---------- Boot ----------
     document.addEventListener("DOMContentLoaded", () => {
       restoreTocCollapse();
@@ -1543,7 +1613,7 @@ flowchart LR
       injectAnchors();
       injectCopyButtons();
       renderMath();
-      renderMermaid();
+      (document.fonts ? document.fonts.ready : Promise.resolve()).then(checkDiagrams);
       setupTocSpy();
       setupScrollProgress();
     });
