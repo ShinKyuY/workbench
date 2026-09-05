@@ -50,7 +50,7 @@ A usable goal names:
 - **Hard vs. negotiable conditions (필수/조정 가능).** Only when conditions
   may conflict, separate the ones that must hold from the ones that can
   give, and state it in the goal. If context doesn't reveal the priority,
-  spend the single Repair question here.
+  spend one of the Repair questions here.
 - **Inter-rater test (상호평가).** Two reviewers reading only the goal text
   reach the same pass/fail verdict. Anything the check relies on must be
   derivable from the text — unwritten expectations become noise.
@@ -71,11 +71,11 @@ A usable goal names:
   way, representative examples, or an explicit approval step instead of an
   arbitrary metric.
 
-### 4. Repair — 약한 목표는 고치고, 물음은 하나만
+### 4. Repair — 약한 목표는 고치고, 물음은 최대 셋
 
 Rewrite a vague goal into an observable one when context makes the rewrite
 safe. Reject pure activity goals ("make progress", "keep investigating",
-"되게 만들어줘") until sharpened. Ask **one** question only when a safe
+"되게 만들어줘") until sharpened. Ask at most **three** questions, and only when a safe
 rewrite risks the wrong outcome — target the missing validator or scope:
 "Success by latency, cost, or accuracy?", "Verify against local, staging,
 or prod?", "Minimum evidence before marking complete?". If no metric
