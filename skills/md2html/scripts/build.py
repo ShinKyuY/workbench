@@ -16,7 +16,8 @@ Usage:
                 are converted here (see md_passthrough.py).
   --no-toc      strip the TOC sidebar entirely (short documents).
   --render-check  load the result in headless Chrome/Chromium/Edge and fail
-                on Mermaid syntax errors, KaTeX errors, or unrendered diagrams.
+                on KaTeX errors, diagram labels that overflow their node, or
+                diagrams drawn outside their viewBox.
 
 Exits non-zero and prints the reason if verification fails.
 """
@@ -27,6 +28,7 @@ import re
 import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -37,28 +39,35 @@ REQUIRED_KEYS = [
     "DATE", "READ_TIME", "BRAND_LABEL", "TOC_TITLE", "PRINT_TOOLTIP",
     "THEME_TOOLTIP", "CLOSE_LABEL", "SKIP_LINK_LABEL", "FOOTER_NOTE",
 ]
-MERMAID_TYPES = ("flowchart", "sequenceDiagram", "erDiagram", "stateDiagram-v2",
-                 "gantt", "classDiagram", "journey", "pie", "timeline")
 START, END = "<!-- CONTENT_START -->", "<!-- CONTENT_END -->"
 # These glyphs inside <code> usually mean LaTeX was flattened instead of
 # rendered via KaTeX (components.md §15).
 MATH_GLYPHS = "≈∝∑Σ∫√𝔼ℙℝ≤≥∈∉⊂⊆⊃·⋅μλΛπτΔδηφψαβγσΩω"
-# Raw "<" followed by a tag-like character inside math, code, or mermaid is
-# parsed as HTML by the browser and silently swallows text (`\(x<y\)` loses
-# everything after x; `List<String>` renders as `List`).
+# Raw "<" followed by a tag-like character inside math or code is parsed as
+# HTML by the browser and silently swallows text (`\(x<y\)` loses everything
+# after x; `List<String>` renders as `List`).
 RAW_TAG_RE = re.compile(r"<[A-Za-z/!?]")
 # Dingbats / misc symbols emoji (✅ ⚠️ ❌ …) plus the SMP emoji planes. The
 # template's own glyphs (✓ ✕ ★ ☆ ✔ ✗) are allowed.
 EMOJI_RE = re.compile("[\U0001F000-\U0001FAFF\u2600-\u27BF]")
 EMOJI_ALLOWED = set("✓✕★☆✔✗")
-# Mermaid: node/edge labels with unquoted parentheses, and `end` used as a
-# node id, both produce "Syntax error in text" at render time.
-MERMAID_UNQUOTED_PAREN_RE = re.compile(
-    r'\w\[(?!["(/\\\[])[^\]"]*[()]'        # A[Service (v2)]   (shapes like [(db)] [/q/] [[sub]] are fine)
-    r'|\w\((?!["(\[])[^)"\n]*\('             # B(API (v2))
-    r'|\|(?!")[^|"\n]*[()][^|\n]*\|'          # -->|POST /x (json)| B
-)
-MERMAID_END_ID_RE = re.compile(r"(?:-->|---|-\.->|==>|-\.-|\|)\s*end\b|^\s*end\s*(?:-->|---|\[|\(|\{)", re.M)
+# Inline SVG diagrams (components.md §6): shared marker ids live in the
+# template; diagrams may only reference them, never define their own.
+DG_MARKER_IDS = ("dg-arrow", "dg-arrow-accent", "dg-arrow-muted", "dg-arrow-open",
+                 "dg-crow-one", "dg-crow-many", "dg-dot")
+DG_FORBIDDEN_TAGS = ("script", "style", "foreignObject", "image", "a", "use", "defs", "marker", "svg")
+DG_FORBIDDEN_ATTRS = ("style", "fill", "stroke", "color", "font-size", "font-family", "href", "xlink:href")
+DG_CLASS_RE = re.compile(r'class="[^"]*\bdg\b[^"]*"')
+DG_ROOT_RE = re.compile(r'<svg class="dg" viewBox="0 0 (\d+) (\d+)" width="(\d+)" role="img" aria-label="[^"]+">')
+DG_SVG_RE = re.compile(DG_ROOT_RE.pattern + r".*?</svg>", re.S)
+DG_CJK_RE = re.compile("[ᄀ-ᇿ぀-ヿ㄰-㆏㐀-䶿一-鿿가-힣＀-￯]")
+DG_TEXT_BUDGET = {"dg-process": lambda w: w - 16, "dg-external": lambda w: w - 16, "dg-note": lambda w: w - 16,
+                  "dg-state": lambda w: w - 16, "dg-datastore": lambda w: w - 16, "dg-decision": lambda w: 0.7 * w,
+                  "dg-queue": lambda w: w - 32, "dg-entity": lambda w: w - 20, "dg-actor": lambda w: 112}
+DG_SHAPES = tuple(DG_TEXT_BUDGET) + ("dg-state-start", "dg-state-end")
+DG_SHAPE_TAGS = ("rect", "polygon", "path", "ellipse", "circle", "line", "polyline")
+DG_TEXT_EM = {"dg-text": 13, "dg-entity-title": 13, "dg-sub": 11, "dg-entity-row": 12}
+DG_MARKER_ATTRS = ("marker-start", "marker-mid", "marker-end")
 CHROME_CANDIDATES = [
     os.environ.get("MD2HTML_CHROME", ""),
     "google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "chrome", "msedge",
@@ -85,7 +94,7 @@ def find_chrome():
     return None
 
 
-def render_check(out_path, expected_mermaid):
+def render_check(out_path, expected_diagrams):
     """Render in headless Chrome and inspect the DOM. Returns a list of errors,
     or None when no browser is available."""
     chrome = find_chrome()
@@ -98,18 +107,145 @@ def render_check(out_path, expected_mermaid):
     except (subprocess.TimeoutExpired, OSError) as e:
         return [f"render check could not run ({e})"]
     errors = []
-    syntax = dom.count("Syntax error in text")
-    if syntax:
-        errors.append(f"{syntax} mermaid block(s) failed to parse (\"Syntax error in text\")")
     katex_err = len(re.findall(r'class="katex-error"', dom))
     if katex_err:
         errors.append(f"{katex_err} KaTeX error(s) — check the LaTeX and the <, >, & escaping")
-    rendered = len(re.findall(r'<svg[^>]+id="mermaid-', dom))
-    if expected_mermaid and rendered < expected_mermaid:
-        if rendered == 0:
-            errors.append(f"0 of {expected_mermaid} mermaid diagrams rendered — CDN unreachable or every block failed")
-        else:
-            errors.append(f"only {rendered} of {expected_mermaid} mermaid diagrams rendered")
+    checked = dom.count('data-dg-checked="1"')
+    if expected_diagrams and checked < expected_diagrams:
+        errors.append(f"only {checked} of {expected_diagrams} svg diagrams were checked (boot script did not run)")
+    overflow = sum(int(n) for n in re.findall(r'data-dg-overflow="(\d+)"', dom))
+    if overflow:
+        errors.append(f"{overflow} diagram label(s) overflow their shape — shorten the label or widen the node")
+    clipped = dom.count('data-dg-clipped="1"')
+    if clipped:
+        errors.append(f"{clipped} diagram(s) draw outside their viewBox — enlarge viewBox or move the element")
+    return errors
+
+
+def dg_classes(el):
+    return el.get("class", "").split()
+
+
+def dg_text_width(s, em):
+    """Estimated rendered width: CJK glyphs 1.0 em, everything else 0.6 em."""
+    return sum((1.0 if DG_CJK_RE.match(ch) else 0.6) * em for ch in s)
+
+
+def dg_shape_width(node):
+    """Width of the first rect / polygon / ellipse / circle child of a node."""
+    for child in node:
+        if child.tag == "rect":
+            return float(child.get("width", 0))
+        if child.tag == "polygon":
+            xs = [float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", child.get("points", ""))][0::2]
+            return max(xs) - min(xs) if xs else 0
+        if child.tag == "ellipse":
+            return 2 * float(child.get("rx", 0))
+        if child.tag == "circle":
+            return 2 * float(child.get("r", 0))
+    return 0
+
+
+def check_diagram(src):
+    """Static checks for one svg.dg (components.md §6). Returns a list of errors."""
+    errors = []
+    m = DG_ROOT_RE.match(src)
+    vb_w, width = int(m.group(1)), int(m.group(3))
+    if vb_w > 880:
+        errors.append(f"viewBox width {vb_w} exceeds 880 — split the diagram or tighten the grid")
+    if width != vb_w:
+        errors.append(f'width="{width}" must equal the viewBox width {vb_w}')
+    try:
+        root = ET.fromstring(src)
+    except ET.ParseError:
+        errors.append("svg.dg is not well-formed XML (raw < or &, unclosed tag) — write &lt; / &amp;")
+        return errors
+    parent = {child: el for el in root.iter() for child in el}
+
+    def ancestors(el):
+        while el in parent:
+            el = parent[el]
+            yield el
+
+    accent_nodes = accent_edges = 0
+    for el in root.iter():
+        if el is root:
+            continue
+        cls = dg_classes(el)
+        if el.tag in DG_FORBIDDEN_TAGS:
+            errors.append(f"<{el.tag}> is not allowed inside svg.dg")
+        bad = [k for k in el.attrib if k in DG_FORBIDDEN_ATTRS]
+        if bad:
+            errors.append(f"<{el.tag} {bad[0]}=…> — colors and fonts come from classes, not attributes")
+        for attr in DG_MARKER_ATTRS:
+            v = el.get(attr)
+            if v is None:
+                continue
+            ref = re.fullmatch(r"url\(#([^)]+)\)", v)
+            if not ref or ref.group(1) not in DG_MARKER_IDS:
+                errors.append(f"{attr}={v!r} is not a shared marker — use url(#ID) with ID in {DG_MARKER_IDS}")
+        if "dg-edge" in cls and not any(attr in el.attrib for attr in DG_MARKER_ATTRS):
+            errors.append("dg-edge without a marker-* attribute — every edge needs an arrowhead")
+        accent_nodes += "dg-node-accent" in cls
+        accent_edges += "dg-edge-accent" in cls
+
+        if el.tag == "text":
+            in_node = any("dg-node" in dg_classes(a) and a.tag == "g" for a in ancestors(el))
+            in_group = ("dg-group-title" in cls and el in parent
+                        and parent[el].tag == "g" and "dg-group" in dg_classes(parent[el]))
+            if not (in_node or "dg-edge-label" in cls or in_group):
+                errors.append(f"text outside a known container: {(el.text or '').strip()[:60]!r}")
+            tspans = list(el)
+            if any(t.tag != "tspan" for t in tspans):
+                errors.append("<text> may only contain <tspan>")
+            if len(tspans) > 2:
+                errors.append("<text> has more than 2 lines — shorten or split the node")
+            if len(tspans) == 2 and "dg-sub" not in dg_classes(tspans[1]):
+                errors.append('second <tspan> must carry class="dg-sub"')
+            if "dg-edge-label" in cls:
+                for line in tspans or [el]:
+                    label = (line.text or "").strip()
+                    est = dg_text_width(label, 12)
+                    if est > 144:
+                        errors.append(f'edge label "{label[:60]}" (~{est:.0f}px) is too long (max 144px) — shorten it')
+
+        if el.tag == "g" and "dg-node" in cls:
+            shapes = [c for c in cls if c in DG_SHAPES]
+            if len(shapes) != 1:
+                errors.append(f"dg-node must have exactly one shape class, got {shapes}")
+                continue
+            shape = shapes[0]
+            if not any(c.tag in DG_SHAPE_TAGS for c in el):
+                errors.append(f"{shape} node has no shape element")
+            if shape in ("dg-state-start", "dg-state-end"):
+                continue
+            texts = [c for c in el if c.tag == "text"]
+            if shape == "dg-entity":
+                titles = [t for t in texts if "dg-entity-title" in dg_classes(t)]
+                rows = [t for t in texts if "dg-entity-row" in dg_classes(t)]
+                if len(titles) != 1 or not rows:
+                    errors.append("dg-entity needs one dg-entity-title and at least one dg-entity-row")
+            elif len(texts) != 1:
+                errors.append(f"{shape} node must contain exactly one <text>, got {len(texts)}")
+            if any(c.startswith("dg-status-") for c in cls) and not any(
+                    "dg-sub" in dg_classes(t) for t in el.iter("tspan")):
+                errors.append("dg-status-* node needs a tspan.dg-sub naming the state in words")
+            width = 0 if shape == "dg-actor" else dg_shape_width(el)
+            budget = DG_TEXT_BUDGET[shape](width)
+            for t in texts:
+                em_text = DG_TEXT_EM.get(next((c for c in dg_classes(t) if c in DG_TEXT_EM), "dg-text"))
+                for line in list(t) or [t]:
+                    em = DG_TEXT_EM.get(next((c for c in dg_classes(line) if c in DG_TEXT_EM), ""), em_text)
+                    label = (line.text or "").strip()
+                    est = dg_text_width(label, em)
+                    if est > budget:
+                        errors.append(f'label "{label[:60]}" (~{est:.0f}px) does not fit its {shape} '
+                                      f"(budget {budget:.0f}px) — shorten or widen")
+
+    if accent_nodes > 1:
+        errors.append(f"{accent_nodes} dg-node-accent nodes — at most one accent per diagram")
+    if accent_edges and not accent_nodes:
+        errors.append("dg-edge-accent without a dg-node-accent — the accent edge must lead to the accent node")
     return errors
 
 
@@ -132,7 +268,7 @@ def main():
     p.add_argument("--allow-unicode-math-in-code", action="store_true",
                    help="skip the math-glyph-in-<code> check (only for code that genuinely uses these glyphs)")
     p.add_argument("--render-check", action="store_true",
-                   help="render in headless Chrome and fail on mermaid/KaTeX errors (skipped if no browser)")
+                   help="render in headless Chrome and fail on diagram/KaTeX errors (skipped if no browser)")
     a = p.parse_args()
 
     html = Path(a.template).read_text(encoding="utf-8")
@@ -173,20 +309,13 @@ def main():
     if broken:
         errors.append(f"anchors with no matching id: {broken}")
 
-    mermaid_bodies = re.findall(r'<pre class="mermaid">(.*?)</pre>', content, flags=re.S)
-    for body in mermaid_bodies:
-        head = body.strip().split(None, 1)[0] if body.strip() else ""
-        if not head.startswith(MERMAID_TYPES):
-            errors.append(f"mermaid block starts with unsupported type: {head!r}")
-        if RAW_TAG_RE.search(body):
-            errors.append("mermaid block contains raw HTML (<br/>, <b>, …) — escape it as &lt;br/&gt;; "
-                          f"see {body.strip()[:50]!r}")
-        if head.startswith("flowchart"):
-            for line in body.splitlines():
-                if MERMAID_UNQUOTED_PAREN_RE.search(line):
-                    errors.append(f"mermaid label with unquoted parentheses — wrap it as A[\"…\"]: {line.strip()[:60]!r}")
-                if MERMAID_END_ID_RE.search(line):
-                    errors.append(f"mermaid node id `end` is reserved — rename it: {line.strip()[:60]!r}")
+    for tag in re.findall(r"<svg\b[^>]*>", content):
+        if DG_CLASS_RE.search(tag) and not DG_ROOT_RE.fullmatch(tag):
+            errors.append('svg.dg root tag must be <svg class="dg" viewBox="0 0 W H" width="W" role="img" '
+                          f'aria-label="…">: {tag[:60]!r}')
+    diagrams = [m.group(0) for m in DG_SVG_RE.finditer(content)]
+    for n, svg in enumerate(diagrams, 1):
+        errors.extend(f"svg.dg #{n}: {e}" for e in check_diagram(svg))
 
     emoji = sorted(set(EMOJI_RE.findall(html)) - EMOJI_ALLOWED)
     if emoji:
@@ -225,23 +354,22 @@ def main():
     out.write_text(html, encoding="utf-8")
     flows = len(re.findall(r'<div class="flow[\s"]', content))
     mockups = len(re.findall(r'<div class="mockup"', content))
-    mermaids = len(mermaid_bodies)
     inline_math = content.count("\\(")
 
     render_note = ""
     if a.render_check:
-        render_errors = render_check(out, mermaids)
+        render_errors = render_check(out, len(diagrams))
         if render_errors is None:
             render_note = ", render check skipped (no Chrome/Chromium/Edge found; set MD2HTML_CHROME)"
         elif render_errors:
             out.unlink(missing_ok=True)
             fail("render check: " + "; ".join(render_errors))
         else:
-            render_note = ", rendered in headless Chrome without mermaid/KaTeX errors"
+            render_note = ", rendered in headless Chrome without diagram/KaTeX errors"
 
     print(f"BUILD OK: {out} ({len(html.splitlines())} lines, {len(anchors)} anchors verified, "
           f"{md_blocks} markdown blocks converted, "
-          f"{flows} native flows, {mockups} wireframes, {mermaids} mermaid blocks, "
+          f"{flows} native flows, {mockups} wireframes, {len(diagrams)} svg diagrams, "
           f"{content.count('$$') // 2} display + {inline_math} inline math, "
           f"no leftover placeholders{render_note})")
 
