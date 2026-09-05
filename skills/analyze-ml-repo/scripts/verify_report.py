@@ -42,15 +42,42 @@ def line_count(path: Path, cache: dict) -> int:
     return cache[path]
 
 
-def resolve(cited: str, roots: list[Path]) -> Path | None:
+SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", ".tox", ".mypy_cache"}
+
+
+def index_basenames(roots: list[Path]) -> dict[str, list[Path]]:
+    """basename -> every file with that name under the roots (for ambiguity checks)."""
+    index: dict[str, list[Path]] = {}
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*"):
+            if any(part in SKIP_DIRS for part in path.relative_to(root).parts):
+                continue
+            if path.is_file():
+                index.setdefault(path.name, []).append(path)
+    return index
+
+
+def resolve(cited: str, roots: list[Path], index: dict[str, list[Path]]) -> tuple[Path | None, list[Path]]:
+    """Returns (resolved file or None, same-basename candidates).
+
+    A bare basename (no directory) is accepted only when exactly one file
+    with that name exists; otherwise it is ambiguous and the caller fails it.
+    """
     p = Path(cited)
     if p.is_absolute():
-        return p if p.is_file() else None
+        return (p if p.is_file() else None), []
+    candidates = index.get(p.name, [])
+    if "/" not in cited:
+        if len(candidates) == 1:
+            return candidates[0], candidates
+        return None, candidates
     for root in roots:
         cand = root / cited
         if cand.is_file():
-            return cand
-    return None
+            return cand, candidates
+    return None, candidates
 
 
 def check_citations(doc_text: str, roots: list[Path]) -> tuple[int, int, list[str]]:
@@ -59,6 +86,7 @@ def check_citations(doc_text: str, roots: list[Path]) -> tuple[int, int, list[st
     seen: set = set()
     failures: list[str] = []
     checked = ignored = 0
+    index = index_basenames(roots)
     for lineno, line in enumerate(doc_text.splitlines(), 1):
         for m in CITATION_RE.finditer(URL_RE.sub("", line)):
             cited, start = m.group("path"), int(m.group("start"))
@@ -67,12 +95,24 @@ def check_citations(doc_text: str, roots: list[Path]) -> tuple[int, int, list[st
             if key in seen:
                 continue
             seen.add(key)
-            target = resolve(cited, roots)
+            target, candidates = resolve(cited, roots, index)
             if target is None:
                 if cited.rsplit(".", 1)[-1].lower() in HOSTLIKE_EXTS:
                     ignored += 1
+                    continue
+                checked += 1
+                rel = [str(c.relative_to(r)) for c in candidates for r in roots if r in c.parents]
+                if "/" not in cited and len(candidates) > 1:
+                    failures.append(
+                        f"{cited}:{start} — ambiguous basename, {len(candidates)} candidates: "
+                        f"{', '.join(rel[:5])} (doc line {lineno})"
+                    )
+                elif rel:
+                    failures.append(
+                        f"{cited}:{start} — file not found; same basename at: "
+                        f"{', '.join(rel[:5])} (doc line {lineno})"
+                    )
                 else:
-                    checked += 1
                     failures.append(f"{cited}:{start} — file not found (doc line {lineno})")
                 continue
             checked += 1
@@ -134,15 +174,18 @@ def check_mermaid(doc_text: str) -> tuple[int, list[str]]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("doc", type=Path, help="analysis markdown document")
-    ap.add_argument("--repo", type=Path, default=Path.cwd(),
-                    help="analyzed repo root citations are relative to (default: CWD)")
+    ap.add_argument("--repo", type=Path, default=None,
+                    help="analyzed repo root citations are relative to "
+                         "(default: CWD, then the document's directory)")
     args = ap.parse_args()
 
     if not args.doc.is_file():
         print(f"error: document not found: {args.doc}", file=sys.stderr)
         return 2
     doc_text = args.doc.read_text(encoding="utf-8", errors="replace")
-    roots = [args.repo, args.doc.parent, Path.cwd()]
+    # With --repo, citations resolve against that tree only. Falling back to
+    # CWD or the doc's directory would let a same-named file elsewhere pass.
+    roots = [args.repo.resolve()] if args.repo else [Path.cwd(), args.doc.parent.resolve()]
 
     checked, ignored, cite_fail = check_citations(doc_text, roots)
     n_blocks, mer_fail = check_mermaid(doc_text)
@@ -151,6 +194,15 @@ def main() -> int:
           f"{len(cite_fail)} failed, {ignored} ignored (host-like)")
     for f in cite_fail:
         print(f"  FAIL {f}")
+    by_kind: dict[str, int] = {}
+    for f in cite_fail:
+        kind = "ambiguous basename" if "ambiguous basename" in f else (
+            "missing path prefix" if "same basename at" in f else "other")
+        by_kind[kind] = by_kind.get(kind, 0) + 1
+    if by_kind.get("ambiguous basename", 0) + by_kind.get("missing path prefix", 0) > 0:
+        print(f"  hint: {by_kind.get('ambiguous basename', 0)} ambiguous + "
+              f"{by_kind.get('missing path prefix', 0)} prefix failures — "
+              "fix the cited paths to be repo-relative, then re-run")
     print(f"mermaid: {n_blocks} blocks, {len(mer_fail)} failures")
     for f in mer_fail:
         print(f"  FAIL {f}")
