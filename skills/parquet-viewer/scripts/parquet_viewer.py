@@ -125,15 +125,20 @@ async function loadPage(p){
     params.set('sort',cols[sortCol]);
     params.set('asc',sortAsc?1:0);
   }
-  const r=await fetch('/api/data?'+params);
-  const d=await r.json();
+  const count=document.getElementById('search-count');
+  let d;
+  try{
+    const r=await fetch('/api/data?'+params);
+    d=await r.json();
+    if(!r.ok){count.textContent='Error: '+(d.error||r.status);return;}
+  }catch(e){count.textContent='Error: '+e;return;}
   page=d.page; totalPages=d.total_pages; totalRows=d.total_rows;
   document.getElementById('page-info').textContent=
     (page+1)+' / '+totalPages+' ('+totalRows.toLocaleString()
     +' rows)';
   document.getElementById('prev').disabled=page<=0;
   document.getElementById('next').disabled=page>=totalPages-1;
-  document.getElementById('search-count').textContent=
+  count.textContent=
     q?'Matches: '
     +totalRows.toLocaleString()+' rows':'';
   window._lastData=d.data;
@@ -208,7 +213,9 @@ def load_data(path, max_rows=None):
     even large files open without memory pressure.
     """
     print(f"Loading {path} ...", flush=True)
-    ds = pads.dataset(path, format="parquet")
+    # hive partitioning: dt=2024-01-01/part-0.parquet directories expose
+    # the partition keys as columns instead of silently dropping them.
+    ds = pads.dataset(path, format="parquet", partitioning="hive")
     source_rows = ds.count_rows()
     if max_rows and source_rows > max_rows:
         df = ds.head(max_rows).to_pandas()
@@ -224,6 +231,41 @@ def load_data(path, max_rows=None):
         flush=True,
     )
     return df, source_rows
+
+
+def as_text(series):
+    """String view of a column for substring search.
+
+    astype(str) raises on non-UTF-8 bytes; mirror sanitize_chunk and
+    hex-encode bytes instead.
+    """
+    if series.dtype == object:
+        return series.map(
+            lambda v: v.hex()
+            if isinstance(v, (bytes, bytearray))
+            else str(v)
+        )
+    return series.astype(str)
+
+
+def contains(series, text):
+    return as_text(series).str.contains(
+        text, case=False, na=False, regex=False
+    )
+
+
+def sort_frame(subset, col, asc):
+    """Sort; columns holding dict/list/array values compare by their
+    string form instead of raising."""
+    try:
+        return subset.sort_values(
+            col, ascending=asc, na_position="last"
+        )
+    except (TypeError, ValueError):
+        return subset.sort_values(
+            col, ascending=asc, na_position="last",
+            key=lambda s: s.map(str),
+        )
 
 
 def sanitize_chunk(chunk):
@@ -278,37 +320,13 @@ def make_handler(df, parquet_path, source_rows):
             sort_col = qs.get("sort", [None])[0]
             asc = qs.get("asc", ["1"])[0] == "1"
 
-            subset = df
-            if q:
-                if ":" in q:
-                    col_name, val = q.split(":", 1)
-                    col_name = col_name.strip()
-                    val = val.strip()
-                    if col_name in df.columns:
-                        subset = subset[
-                            subset[col_name].astype(str)
-                            .str.contains(
-                                val, case=False, na=False
-                            )
-                        ]
-                else:
-                    mask = pd.Series(
-                        False, index=subset.index
-                    )
-                    for c in subset.columns:
-                        mask |= (
-                            subset[c].astype(str)
-                            .str.contains(
-                                q, case=False, na=False
-                            )
-                        )
-                    subset = subset[mask]
-
-            if sort_col and sort_col in subset.columns:
-                subset = subset.sort_values(
-                    sort_col, ascending=asc,
-                    na_position="last",
+            try:
+                subset = self._filter_sort(q, sort_col, asc)
+            except Exception as e:  # surfaced to the browser, not swallowed
+                self._json(
+                    {"error": f"{type(e).__name__}: {e}"}, status=400
                 )
+                return
 
             total = len(subset)
             total_pages = max(1, (total + ps - 1) // ps)
@@ -330,8 +348,26 @@ def make_handler(df, parquet_path, source_rows):
                 ),
             })
 
-        def _json(self, obj):
-            self.send_response(200)
+        def _filter_sort(self, q, sort_col, asc):
+            subset = df
+            if q:
+                col_name, _, val = q.partition(":")
+                col_name, val = col_name.strip(), val.strip()
+                if _ and col_name in df.columns:
+                    subset = subset[contains(subset[col_name], val)]
+                else:
+                    # no such column: treat the whole query (colon
+                    # included, e.g. a timestamp) as full-text search
+                    mask = pd.Series(False, index=subset.index)
+                    for c in subset.columns:
+                        mask |= contains(subset[c], q)
+                    subset = subset[mask]
+            if sort_col and sort_col in subset.columns:
+                subset = sort_frame(subset, sort_col, asc)
+            return subset
+
+        def _json(self, obj, status=200):
+            self.send_response(status)
             self.send_header(
                 "Content-Type", "application/json"
             )
