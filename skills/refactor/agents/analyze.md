@@ -152,8 +152,9 @@ becomes a fact to the user.
 
 Write each sign as `file:line | sign | severity | evidence | suggested
 technique (optional)` — a uniform shape so it can be merged and deduped
-with the Architecture Agent's findings. Detail at most the top 15 by
-severity; summarize the rest as per-category counts.
+with the Architecture Agent's findings. Detail the signs that should
+shape the plan, highest severity first; summarize the rest as
+per-category counts.
 
 End the report with a status line —
 `DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED` plus one line of

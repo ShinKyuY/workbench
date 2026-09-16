@@ -36,7 +36,7 @@ import md_passthrough  # noqa: E402
 
 REQUIRED_KEYS = [
     "LANG", "REC_LABEL", "TITLE", "SUBTITLE", "DOC_TYPE", "SOURCE_FILE",
-    "DATE", "READ_TIME", "BRAND_LABEL", "TOC_TITLE", "PRINT_TOOLTIP",
+    "DATE", "BRAND_LABEL", "TOC_TITLE", "PRINT_TOOLTIP",
     "THEME_TOOLTIP", "CLOSE_LABEL", "SKIP_LINK_LABEL", "FOOTER_NOTE",
 ]
 START, END = "<!-- CONTENT_START -->", "<!-- CONTENT_END -->"
@@ -257,6 +257,16 @@ def splice(html, start_marker, end_marker, payload):
     return html[: i + len(start_marker)] + "\n" + payload + "\n" + html[j:]
 
 
+def read_time(content_html, lang):
+    """Reading-time label from the rendered body: 250 words/min, or 500 chars/min for Korean."""
+    text = re.sub(r"<[^>]+>", " ", content_html)
+    if lang == "ko":
+        minutes = max(1, round(len(re.sub(r"\s", "", text)) / 500))
+        return f"~{minutes}분 소요"
+    minutes = max(1, round(len(text.split()) / 250))
+    return f"~{minutes} min read"
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--template", default=str(Path(__file__).resolve().parent.parent / "template.html"))
@@ -278,6 +288,7 @@ def main():
     if md_passthrough.MD_START in content or md_passthrough.MD_END in content:
         fail("unbalanced <!-- MD --> / <!-- /MD --> markers in content.html")
 
+    meta.setdefault("READ_TIME", read_time(content, meta.get("LANG")))
     missing = [k for k in REQUIRED_KEYS if k not in meta]
     if missing:
         fail(f"meta.json missing keys: {missing}")

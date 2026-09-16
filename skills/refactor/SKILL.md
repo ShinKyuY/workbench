@@ -177,7 +177,7 @@ starting Phase 4:
 > **baseline metrics** used for the Phase 5 comparison.
 
 Spawn the **Analyze subagent** (`agents/analyze.md`) — for Large
-targets, 2–5 scoped shards of it (see "Dynamic fan-out"). It covers:
+targets, scoped shards of it per the "Dynamic fan-out" band. It covers:
 
 - **Defect sign detection** — size (Long Method/Large Class), structure
   (God Class, Feature Envy), duplication & derivable state,
@@ -209,8 +209,8 @@ status, and baseline metrics.
 > the code level.
 
 Spawn the **Architecture subagent** (`agents/architecture.md`),
-**in parallel** with Phase 1 — for Large targets, optionally 2–5 lens
-agents (see "Dynamic fan-out"). It covers:
+**in parallel** with Phase 1 — for Large targets, optionally lens
+agents per the "Dynamic fan-out" band. It covers:
 
 - SOLID principles check (SRP/OCP/LSP/ISP/DIP)
 - Coupling & cohesion analysis, circular dependency check

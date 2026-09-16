@@ -13,9 +13,8 @@ Dataset -> collate -> model input.
 
 ### 2. Preprocessing
 
-Analyze every preprocessing step found in the code, without
-exception. Which of the following applies depends on the
-architecture:
+Analyze every preprocessing step found in the code. Which of the
+following applies depends on the architecture:
 
 - **Common**: normalization, filtering, sorting, missing-value
   handling

@@ -136,7 +136,8 @@ the orchestrator can merge the lens reports at Checkpoint ①.
 
 Write "location" as `file:line` wherever possible — the shape must match
 the Analyze Agent's findings so Checkpoint ① can merge and dedup them.
-Detail at most the top 15 by severity; summarize the rest as counts.
+Detail the findings that should shape the plan, highest severity
+first; summarize the rest as counts.
 
 End the report with a status line —
 `DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED` plus one line of

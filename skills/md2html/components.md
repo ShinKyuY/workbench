@@ -4,14 +4,14 @@ This file is the **single source of truth** for the HTML snippets you (the AI) m
 
 **Rules:**
 - Copy snippets verbatim, only replace the bracketed `{{...}}` placeholders.
-- Never invent new CSS classes — every visual element MUST be one of these components or vanilla markdown HTML (`<h2>`, `<p>`, `<ul>`, etc.).
+- Never invent new CSS classes — every visual element must be one of these components or vanilla markdown HTML (`<h2>`, `<p>`, `<ul>`, etc.).
 - All sample text in this catalog is illustrative — replace with real content from the source `.md`.
 - **Language follows the source**: Korean source → Korean UI labels; any other language → English UI labels. See the label table below. Body content always stays in the source language.
 - **Use SVG icons via the sprite, never emojis.** All icons reference IDs defined in `template.html`'s `<svg class="icon-sprite">`. Form: `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-NAME"/></svg>`. See §13 for the full catalog of available icon IDs.
 
 ## Language label table
 
-The HTML's `<html lang="...">` attribute MUST be `ko` for Korean sources and `en` for everything else. The "Recommended" badge label is set via the `--rec-label` CSS variable on `<html>`. Both come from `meta.json` (`LANG`, `REC_LABEL`).
+The HTML's `<html lang="...">` attribute must be `ko` for Korean sources and `en` for everything else. The "Recommended" badge label is set via the `--rec-label` CSS variable on `<html>`. Both come from `meta.json` (`LANG`, `REC_LABEL`).
 
 ```html
 <!-- what build.py produces from meta.json LANG / REC_LABEL — do not write this yourself -->
@@ -62,10 +62,10 @@ The HTML's `<html lang="...">` attribute MUST be `ko` for Korean sources and `en
 
 ## 1. Title block (in `<header class="doc-header">`)
 
-These values go into `meta.json` (keys `TITLE`, `SUBTITLE`, `DOC_TYPE`, `SOURCE_FILE`, `DATE`, `READ_TIME`); `build.py` substitutes them into the header. Do not edit `template.html`.
+These values go into `meta.json` (keys `TITLE`, `SUBTITLE`, `DOC_TYPE`, `SOURCE_FILE`, `DATE`); `build.py` substitutes them into the header. Do not edit `template.html`.
 
 - `{{DOC_TYPE}}` examples: `PLAN`, `SPEC`, `SYSTEM DESIGN`, `RFC`, `NOTES`, `RUNBOOK`, `POSTMORTEM`.
-- `{{READ_TIME}}` format: `~5 min read` / `~5분 소요` (estimate ~250 words/minute; Korean: ~500 characters/minute).
+- `{{READ_TIME}}` is computed by `build.py` (`~5 min read` / `~5분 소요`); omit it from `meta.json`.
 
 ---
 
@@ -593,7 +593,7 @@ When the source *describes a screen* — "상단에 네비게이션, 좌측에 �
 
 **Rules:**
 - **Structure over pixel fidelity** — a wireframe answers "what goes where", not "what does it look like". Use `.placeholder` for anything that's content, not layout.
-- Label every region with the source's own terms (menu names, button labels verbatim — Critical rule 1 applies to UI text too).
+- Label every region with the source's own terms (menu names, button labels verbatim — rule 1 applies to UI text too).
 - For "layout A vs B" decisions, put two `.mockup`s in `.split` and mark the chosen one in the caption or with a decision callout — same logic as comparison cards (§8).
 - Wrap in `<figure class="diagram">` + `<figcaption>` like other diagrams.
 - One mockup per screen. A multi-screen journey = flow (§6b) of screen names, plus a mockup for the 1-2 screens the document actually details.
