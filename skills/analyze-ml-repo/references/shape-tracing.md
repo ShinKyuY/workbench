@@ -28,35 +28,15 @@ source — they are shapes the authors confirmed. Search:
 The dummy input in a test or in `model.init(rng, x)` gives you the
 true input shape and batch example.
 
-## 3. Read einops / rearrange patterns literally
+## 3. Write resolved shapes for implicit transforms
 
-`einops` strings encode the shape transform explicitly — decode them
-instead of guessing:
-
-- `rearrange(x, "b (h w) c -> b c h w", h=H)` — splits a flattened
-  spatial axis; `h*w` was the sequence length, now `[B, C, H, W]`.
-- `rearrange(x, "b n (h d) -> b h n d", h=heads)` — the classic
-  multi-head split; `d = D / heads`.
-- `repeat`, `reduce` change count/rank — note which axis appears or
-  collapses.
-
-Named axes make the before/after unambiguous; write both shapes.
-
-## 4. Resolve `-1` and flattening
-
-`view(B, -1)` / `reshape(-1, D)` hide a dimension. Compute it from the
-surrounding known dims (the `-1` is `total_elements / known_dims`).
-State what the `-1` resolves to, e.g. `[B, C, H, W]` → `view(B, -1)`
-→ `[B, C*H*W] = [B, 2048]`.
-
-## 5. Track broadcasting explicitly
-
-When two tensors of different rank combine (`a + b`, `a * mask`), the
-result takes the broadcast shape. Note the broadcast so the output
-shape is not mistaken for one of the inputs — e.g. `scores [B, H, N, N]
+`einops`/`rearrange` strings, `view(-1)`/`reshape(-1, D)`, and
+broadcasting all hide a dimension. Write the before and after shape
+with the hidden value resolved, and cite the line — e.g.
+`[B, C, H, W]` → `view(B, -1)` → `[B, 2048]`, or `scores [B, H, N, N]
 + mask [1, 1, N, N]` → `[B, H, N, N]`.
 
-## 6. Follow existing print/hook/log traces
+## 4. Follow existing print/hook/log traces
 
 Authors often leave shape-debugging behind. Search for
 `print(.*shape)`, logging of shapes, `register_forward_hook`, or

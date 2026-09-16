@@ -12,7 +12,7 @@ instructions.
   form.
 - Write the report as markdown sections that can be merged into the
   final analysis document as-is. Compress with tables, diagrams, and
-  code references instead of prose (target ~200 lines total).
+  code references instead of prose.
 - Attach file:line evidence to every shape and number claim, written
   as `path/from/repo/root.py:12` or `path.py:12-18` — a
   repo-root-relative path, colon, plain line number (no `L`, no

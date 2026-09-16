@@ -20,14 +20,12 @@ instead of numbered lists, callouts for the parts that matter.
 
 ## Skill files (resolved relative to this SKILL.md)
 
-- `template.html`   — HTML skeleton with embedded CSS (Claude orange light+dark), SVG diagram marker defs, theme toggle, TOC sidebar, footer. Contains `{{PLACEHOLDER}}` strings and `<!-- COMMENT -->` slots. **Do NOT read this file** — its contract (placeholder list + content slots) is fully documented below, and `scripts/build.py` does the assembly. Reading 1,200 lines of CSS wastes context and tempts you to re-type it, which is the #1 source of drift and cost.
+- `template.html`   — HTML skeleton with embedded CSS (Claude orange light+dark), SVG diagram marker defs, theme toggle, TOC sidebar, footer. Contains `{{PLACEHOLDER}}` strings and `<!-- COMMENT -->` slots. **Do not read this file** — its contract (placeholder list + content slots) is fully documented below, and `scripts/build.py` does the assembly. Reading 1,200 lines of CSS wastes context and tempts you to re-type it, which is the #1 source of drift and cost.
 - `components.md`  — catalog of HTML snippets you must copy verbatim (step cards, callouts, SVG diagram recipes, pros-cons, comparison cards, collapsibles). **Read this in full before writing content.** Do not invent CSS classes or skip the catalog.
 - `scripts/build.py` — assembler. Takes your metadata JSON + TOC fragment + content fragment, converts the Markdown you pasted inside `<!-- MD -->…<!-- /MD -->` blocks (via `scripts/md_passthrough.py`), merges everything into `template.html`, and verifies the result (leftover placeholders, broken anchors, SVG diagram structure and label widths, raw `<` in math/code, emoji, math delimiters, math-as-code; optional headless-Chrome render check). You author only the component sections; it does the mechanics.
 - `examples/`     — reference `<doc>.md` → `<doc>.html` pairs. Optional calibration: if unsure what good output looks like, read only the part of an example `.html` between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`.
 
 ## What you must do when invoked
-
-Follow these steps in order. Do not skip.
 
 ### Step 1 — Resolve inputs
 
@@ -37,7 +35,7 @@ Follow these steps in order. Do not skip.
 
 ### Step 2 — Analyze the source document
 
-Do this analysis silently in your head (or as one short summary line to the user). Identify:
+Analyze the source and tell the user in one line what the document is and how it will be laid out. Identify:
 
 - **Language of the source** — detect from the actual prose, not the filename. Korean source → `<html lang="ko">` + Korean UI labels; any other language → `<html lang="en">` + English UI labels. Body content always stays in the source language.
 
@@ -58,8 +56,8 @@ Do this analysis silently in your head (or as one short summary line to the user
 - **Title** — from first H1 or filename. Title should be ≤ 80 chars.
 - **Subtitle** — first paragraph after H1, or the document's TL;DR sentence. ≤ 200 chars.
 - **Doc type** — infer one of: `PLAN`, `SPEC`, `SYSTEM DESIGN`, `RFC`, `RUNBOOK`, `POSTMORTEM`, `BRAINSTORM`, `NOTES`. Pick the closest match based on the document's *purpose*, not its filename. Brainstorm = exploring options with rationale; Plan = ordered steps to a goal; Spec = exact behavior contract; System design = architecture + tradeoffs; RFC = proposal seeking feedback; Runbook = operational procedure; Postmortem = incident review. The uppercase code in the eyebrow stays universal; the topbar `BRAND_LABEL` localizes (Plan / 계획).
-- **Reading time** — words ÷ 250, round to nearest minute. For Korean sources whitespace word-counting undercounts badly — use characters ÷ 500 instead. Format follows the language table: `~N min read` / `~N분 소요`.
-- **Math presence** — scan for LaTeX delimiters (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`). If present, every formula goes through KaTeX per Critical rule 2 and §15 in `components.md`.
+- **Reading time** — computed by `build.py` from the body; leave `READ_TIME` out of `meta.json`.
+- **Math presence** — scan for LaTeX delimiters (`$...$`, `$$...$$`, `\(...\)`, `\[...\]`). If present, every formula goes through KaTeX per rule 2 and §15 in `components.md`.
 - **Section map** — walk each H2/H3 and tag with the BEST component using §11 cheatsheet in `components.md`. The deciding test for visual vs text: **would the reader understand this section better by seeing it than by reading it?** Layouts, flows, state machines, schemas → visual; requirements, tradeoffs, conceptual choices → text components. A section *about* a UI is not automatically visual — "어떤 위저드를 만들까" is conceptual (text), "위저드 화면 구성은 이렇다" is visual (wireframe).
   - numbered action list → Timeline
   - architecture/flow prose → Native flow component (§6b) for simple flows (linear / one fan-out, ≤ ~8 nodes); SVG diagram (§6) for dense flowcharts, sequence, ER, state, architecture; roadmaps/gantt → Timeline
@@ -84,7 +82,7 @@ You write three small part files; `scripts/build.py` merges them into `template.
    - `{{DOC_TYPE}}` → universal uppercase code: `PLAN`, `SPEC`, `SYSTEM DESIGN`, `RFC`, `RUNBOOK`, `POSTMORTEM`, `BRAINSTORM`, `NOTES`
    - `{{SOURCE_FILE}}` → basename of source (e.g. `plan.md`)
    - `{{DATE}}` → ISO date or localized "Updated <today>"
-   - `{{READ_TIME}}` → localized reading time, e.g. `~3 min read` / `~3분 소요`
+   - `{{READ_TIME}}` → optional; `build.py` computes it from the body when omitted
    - `{{BRAND_LABEL}}` → localized doc-type label for the topbar
    - `{{TOC_TITLE}}` → localized "Contents" (also used as `aria-label` for the TOC drawer)
    - `{{PRINT_TOOLTIP}}` → localized print tooltip
@@ -94,7 +92,7 @@ You write three small part files; `scripts/build.py` merges them into `template.
    - `{{FOOTER_NOTE}}` → localized source attribution: `Source: plan.md` / `소스: plan.md`
 2. **Write `<output-dir>/.md2html-parts/toc.html`** — one `<a>` per H2/H3 (see §2 in components.md). Heading ids follow one rule everywhere: lowercase, runs of non-alphanumerics → `-`, Hangul kept (`## 목표와 범위` → `목표와-범위`, `## Goals & scope` → `goals-scope`). Markdown blocks get their ids from this rule automatically; to pin one, write `## Title {#my-id}`. Skip this file for very short documents (see Edge cases).
 3. **Write `<output-dir>/.md2html-parts/content.html`** — the document body, section by section. For each H2 section decide once:
-   - **Component section** (flow, timeline, wireframe, cards, callout, pros-cons — anything from the §11 cheatsheet): hand-write HTML with the snippets in `components.md`. Start with `<h2 id="...">`, ONE primary component per logical chunk, math per Critical rule 2.
+   - **Component section** (flow, timeline, wireframe, cards, callout, pros-cons — anything from the §11 cheatsheet): hand-write HTML with the snippets in `components.md`. Start with `<h2 id="...">`, one primary component per logical chunk, math per rule 2.
    - **Everything else — the default**: paste the section's source Markdown **verbatim** between `<!-- MD -->` and `<!-- /MD -->`. `build.py` converts headings (with ids), paragraphs, lists, task lists, tables (≥ 4 columns get `.table-wrap`), code fences, blockquotes, inline code/bold/links, and math (`$…$` → `\(…\)`, `$$…$$` stays display). Raw HTML inside an MD block is escaped, not passed through. Never retype these sections as HTML by hand — transcription is where table rows and numbers get lost.
    - Preserve original meaning in the component sections — do not summarize away technical detail; condense only filler/repetition. md2html **restructures**, it does not **abridge**: a reader holding only the HTML must be able to reconstruct every claim, definition, derivation step, number, and caveat of the source. If a sentence feels "too detailed to keep", that's usually the sentence the author cared about most.
 4. **Fidelity sweep** — before building, re-walk the source against the **component sections** of `content.html` (MD blocks are verbatim, so they need no sweep) and check off: every display equation still a display equation, every inline formula still math, every table row, list item, numeric fact, file/column name, and cross-reference present. Fix gaps now — this catch-step is cheap, a thin output is a rewrite.
@@ -118,7 +116,7 @@ You write three small part files; `scripts/build.py` merges them into `template.
 - 1-line summary of what changed (e.g. *"Rendered 7 sections: 1 SVG sequence diagram, 2 step timelines, 4 callouts. ~6 min read."* — written in the conversation language)
 - A reminder they can open it with `xdg-open <file>.html` (Linux) / `open <file>.html` (mac).
 
-## Critical rules
+## Rules
 
 1. **Never paraphrase technical content into vague prose.** A step `0042_user_schema.sql 마이그레이션 실행` must keep that exact filename — don't change it to `새 마이그레이션 실행`.
 2. **Math renders via KaTeX — never as `<code>`/unicode approximation.** Inline `$x$` → `\(x\)`, display `$$...$$` stays display in its own `<p>`, LaTeX body verbatim (`m_{\mathrm{gap}}` stays `m_{\mathrm{gap}}`). Escape `<` `>` `&` inside math. See `components.md` §15.
@@ -131,7 +129,7 @@ You write three small part files; `scripts/build.py` merges them into `template.
    both degrade gracefully offline). Never add more.
 8. **Do not modify `template.html`, `components.md`, or `scripts/build.py`** — those are the skill's source of truth. Only write the part files and the output `.html`.
 9. **Use SVG icons only — never emojis.** Every icon is `<svg class="..."><use href="#i-NAME"/></svg>` referencing the sprite at the top of `<body>`. See §13 in `components.md` for the catalog. No emoji glyphs anywhere in callouts, doc-meta, topbar, or body content.
-10. **Anchor links and copy-to-clipboard auto-inject via JS** — do NOT add them manually. Just give H2/H3 a proper `id`, and put code in `<pre><code>`. The template's boot script handles the rest.
+10. **Anchor links and copy-to-clipboard auto-inject via JS** — do not add them manually. Just give H2/H3 a proper `id`, and put code in `<pre><code>`. The template's boot script handles the rest.
 11. **Wrap wide tables in `.table-wrap`** — see components.md §14b. Tables ≥ 4 columns or with long cells need the wrapper for mobile scroll.
 12. **Use `<figure>` + `<figcaption>` for images** with descriptive `alt`. See components.md §14a.
 

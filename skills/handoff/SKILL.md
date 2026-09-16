@@ -184,6 +184,6 @@ When a HANDOFF.md already exists:
 
 ## Length guide (분량 가이드)
 
-A long handoff gets skipped by the next agent. Target **200 lines
-total**. Beyond that, consider splitting the decision log into a
-separate file (`HANDOFF-history.md`).
+A long handoff gets skipped by the next agent. Keep each section to
+what changes the next agent's first actions. When the decision log
+outgrows a single read, split it into `HANDOFF-history.md`.
