@@ -1,6 +1,8 @@
 # Diagram Rules (다이어그램 규칙)
 
-The final markdown document must include the diagrams below. Complex
+The final markdown document must include the diagrams below; a
+partial analysis includes D1 plus only the diagrams of the sections
+it keeps. Complex
 ML pipelines are hard to understand from prose alone, so the diagrams
 are a core deliverable. Use formats that render well in common
 markdown viewers:
@@ -33,8 +35,9 @@ than Mermaid and tables.
 - State the direction: `flowchart TD` or `flowchart LR`. A bare
   `graph` with no direction is forbidden because many renderers reject
   it or lay it out unpredictably.
-- If a node label contains square brackets like `[B, N, D]`, wrap
-  the whole label in double quotes: `A["x [B, 3, 224, 224]"]`.
+- If a node or edge label contains brackets, parentheses, or braces
+  (`[B, N, D]`, `Conv2d(3, 64)`), wrap the whole label in double
+  quotes: `A["x [B, 3, 224, 224]"]`, `-->|"[B, N]"|`.
   Without quoting, Mermaid fails to parse.
 - Group repeated blocks with `subgraph` and put the repeat count in
   the label: `subgraph BLK["TransformerBlock × 12"]`.

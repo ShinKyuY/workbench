@@ -6,15 +6,16 @@ risks drift. You (the AI) only author the *content*; this script does the
 mechanical assembly and then verifies the result.
 
 Usage:
-  python3 build.py --meta meta.json --toc toc.html --content content.html \
-                   --out /path/to/output.html [--no-toc]
+  python3 build.py --meta meta.json --content content.html \
+                   --out /path/to/output.html [--no-toc] [--toc toc.html]
 
   meta.json     {"LANG": "ko", "TITLE": "...", ...} — every {{KEY}} in the template.
-  toc.html      <a href="#...">...</a> entries only (omit with --no-toc).
   content.html  the body that goes between CONTENT_START and CONTENT_END.
                 Sections pasted as source Markdown inside <!-- MD --> … <!-- /MD -->
                 are converted here (see md_passthrough.py).
   --no-toc      strip the TOC sidebar entirely (short documents).
+  --toc         optional override: <a href="#...">...</a> entries only. Without
+                it the TOC is built from every <h2 id>/<h3 id> in the final body.
   --render-check  load the result in headless Chrome/Chromium/Edge and fail
                 on KaTeX errors, diagram labels that overflow their node, or
                 diagrams drawn outside their viewBox.
@@ -267,6 +268,13 @@ def read_time(content_html, lang):
     return f"~{minutes} min read"
 
 
+def build_toc(content_html):
+    """One TOC entry per <h2 id>/<h3 id>, in document order, using the final ids."""
+    return "\n".join(
+        f'<a href="#{hid}" class="lvl-{lvl}">{" ".join(re.sub(r"<[^>]+>", "", text).split())}</a>'
+        for lvl, hid, text in re.findall(r'<h([23])\b[^>]*?\bid="([^"]+)"[^>]*>(.*?)</h\1>', content_html, re.S))
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--template", default=str(Path(__file__).resolve().parent.parent / "template.html"))
@@ -301,9 +309,9 @@ def main():
         # drop the mobile trigger so it doesn't open an empty drawer
         html = re.sub(r'<button class="icon-btn toc-mobile-trigger".*?</button>\s*', "", html, count=1, flags=re.S)
     else:
-        toc = Path(a.toc).read_text(encoding="utf-8") if a.toc else ""
+        toc = Path(a.toc).read_text(encoding="utf-8") if a.toc else build_toc(content)
         if not toc.strip():
-            fail("TOC fragment is empty; pass --no-toc to build without a sidebar")
+            fail("TOC is empty (no <h2 id>/<h3 id> in the body); pass --no-toc to build without a sidebar")
         html = html.replace("<!-- TOC_ENTRIES -->", toc, 1)
 
     html = splice(html, START, END, content)

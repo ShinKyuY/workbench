@@ -37,9 +37,9 @@ Each transform:
    - Run the project's test command, and typecheck / build when the
      project has them (they catch broken references in files the
      tests never import)
-   - Green → next Step
-   - Red → roll back immediately, analyze the cause, retry in
-     smaller units
+   - Green (no test that passed before the Step now fails) → next Step
+   - Red (a test that passed before the Step now fails) → roll back
+     immediately, analyze the cause, retry in smaller units
    - No test suite (user declined Step 0): run the alternative check
      named in the Step — check commands plus the fixed-input entrypoint
      run — and diff its output against the pre-Step run
@@ -54,7 +54,8 @@ Each transform:
 
 When the Step is Step 0, read `references/characterization-testing.md`
 first. Capture golden values on the inputs the plan lists, confirm the
-new tests pass on the untouched code, commit them, and re-record the
+new tests pass on the untouched code, leave them uncommitted for the
+orchestrator's checkpoint commit, and re-record the
 test inventory (command, passed/failed counts) so later Steps and
 Verify compare against a baseline that includes them.
 
@@ -67,7 +68,8 @@ between moves.
 
 ## Guardrails (안전장치)
 
-- Re-confirm tests are green before changing anything
+- Run the check commands before changing anything and record which
+  tests already fail
 - When any of the following occurs, **stop and report to the
   orchestrator (main conversation)**. Subagents cannot talk to the
   user; the main conversation obtains user confirmation and relays the

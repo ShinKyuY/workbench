@@ -324,11 +324,11 @@ inference-analyst — not the whole-system flow.)
    <analyzed-repo-root>`. It checks every file:line citation against
    that tree only (file exists, line within file length; a bare
    basename that matches several files is reported as ambiguous with
-   the candidates) and lints Mermaid blocks (direction stated, bracket
-   labels quoted, subgraph/end balanced). A failure that names
-   same-basename candidates is a missing path prefix — fix the cited
-   path; every other failure is fixed by reopening the code, never by
-   deleting evidence. Re-run until it prints `result: OK`.
+   the candidates) and lints Mermaid blocks (direction stated, labels
+   with brackets/parens quoted, subgraph/end balanced). A failure that
+   names same-basename candidates is a missing path prefix — fix the
+   cited path; every other failure is fixed by reopening the code, never
+   by deleting evidence. Re-run until it prints `result: OK`.
 3. In chat, present only the key summary (end-to-end workflow plus a
    few main findings) and the `.md` file path. Do not paste the full
    document back into the chat.

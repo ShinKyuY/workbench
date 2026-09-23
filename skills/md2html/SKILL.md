@@ -22,7 +22,7 @@ instead of numbered lists, callouts for the parts that matter.
 
 - `template.html`   — HTML skeleton with embedded CSS (Claude orange light+dark), SVG diagram marker defs, theme toggle, TOC sidebar, footer. Contains `{{PLACEHOLDER}}` strings and `<!-- COMMENT -->` slots. **Do not read this file** — its contract (placeholder list + content slots) is fully documented below, and `scripts/build.py` does the assembly. Reading 1,200 lines of CSS wastes context and tempts you to re-type it, which is the #1 source of drift and cost.
 - `components.md`  — catalog of HTML snippets you must copy verbatim (step cards, callouts, SVG diagram recipes, pros-cons, comparison cards, collapsibles). **Read this in full before writing content.** Do not invent CSS classes or skip the catalog.
-- `scripts/build.py` — assembler. Takes your metadata JSON + TOC fragment + content fragment, converts the Markdown you pasted inside `<!-- MD -->…<!-- /MD -->` blocks (via `scripts/md_passthrough.py`), merges everything into `template.html`, and verifies the result (leftover placeholders, broken anchors, SVG diagram structure and label widths, raw `<` in math/code, emoji, math delimiters, math-as-code; optional headless-Chrome render check). You author only the component sections; it does the mechanics.
+- `scripts/build.py` — assembler. Takes your metadata JSON + content fragment, converts the Markdown you pasted inside `<!-- MD -->…<!-- /MD -->` blocks (via `scripts/md_passthrough.py`), builds the TOC from the final heading ids, merges everything into `template.html`, and verifies the result (leftover placeholders, broken anchors, SVG diagram structure and label widths, raw `<` in math/code, emoji, math delimiters, math-as-code; optional headless-Chrome render check). You author only the component sections; it does the mechanics.
 - `examples/`     — reference `<doc>.md` → `<doc>.html` pairs. Optional calibration: if unsure what good output looks like, read only the part of an example `.html` between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`.
 
 ## What you must do when invoked
@@ -72,7 +72,7 @@ Analyze the source and tell the user in one line what the document is and how it
 
 ### Step 3 — Build the output HTML
 
-You write three small part files; `scripts/build.py` merges them into `template.html` and verifies the result.
+You write two small part files; `scripts/build.py` merges them into `template.html` and verifies the result.
 
 1. **Write `<output-dir>/.md2html-parts/meta.json`** — one value per template placeholder (all values come from Step 2 analysis, language-matched):
    - `{{LANG}}` → `ko` for Korean sources, `en` otherwise
@@ -90,24 +90,23 @@ You write three small part files; `scripts/build.py` merges them into `template.
    - `{{CLOSE_LABEL}}` → localized "Close" (used for the mobile TOC drawer close button): `Close` / `닫기`
    - `{{SKIP_LINK_LABEL}}` → localized skip-to-content link text: `Skip to content` / `본문 바로가기`
    - `{{FOOTER_NOTE}}` → localized source attribution: `Source: plan.md` / `소스: plan.md`
-2. **Write `<output-dir>/.md2html-parts/toc.html`** — one `<a>` per H2/H3 (see §2 in components.md). Heading ids follow one rule everywhere: lowercase, runs of non-alphanumerics → `-`, Hangul kept (`## 목표와 범위` → `목표와-범위`, `## Goals & scope` → `goals-scope`). Markdown blocks get their ids from this rule automatically; to pin one, write `## Title {#my-id}`. Skip this file for very short documents (see Edge cases).
-3. **Write `<output-dir>/.md2html-parts/content.html`** — the document body, section by section. For each H2 section decide once:
-   - **Component section** (flow, timeline, wireframe, cards, callout, pros-cons — anything from the §11 cheatsheet): hand-write HTML with the snippets in `components.md`. Start with `<h2 id="...">`, one primary component per logical chunk, math per rule 2.
-   - **Everything else — the default**: paste the section's source Markdown **verbatim** between `<!-- MD -->` and `<!-- /MD -->`. `build.py` converts headings (with ids), paragraphs, lists, task lists, tables (≥ 4 columns get `.table-wrap`), code fences, blockquotes, inline code/bold/links, and math (`$…$` → `\(…\)`, `$$…$$` stays display). Raw HTML inside an MD block is escaped, not passed through. Never retype these sections as HTML by hand — transcription is where table rows and numbers get lost.
+2. **Write `<output-dir>/.md2html-parts/content.html`** — the document body, section by section. For each H2 section decide once:
+   - **Component section** (flow, timeline, wireframe, cards, callout, pros-cons — anything from the §11 cheatsheet): hand-write HTML with the snippets in `components.md`. Start with `<h2 id="...">`, one primary component per logical chunk, math per rule 2. `build.py` builds the TOC sidebar from every `<h2 id>`/`<h3 id>` in the final body, so a component heading needs an `id` to appear there.
+   - **Everything else — the default**: paste the section's source Markdown **verbatim** between `<!-- MD -->` and `<!-- /MD -->`. `build.py` converts headings (with ids), paragraphs, lists, task lists, tables (≥ 4 columns get `.table-wrap`), code fences, blockquotes, inline code/bold/links, backslash escapes, and math (`$…$` → `\(…\)`, `$$…$$` stays display, also across lines). Raw HTML inside an MD block is escaped, except inline `<br>`, `<sup>`, `<sub>`, `<kbd>`. Markdown-block heading ids follow the GitHub and VS Code preview rule: lowercase, punctuation dropped, each space → `-`, Hangul and `_` kept, a repeat gets `-1`, `-2` (`## 2.1 목표와 범위` → `21-목표와-범위`, `## Goals & scope` → `goals--scope`), so the source's own `#…` links resolve; to pin one, write `## Title {#my-id}`. Never retype these sections as HTML by hand — transcription is where table rows and numbers get lost.
    - Preserve original meaning in the component sections — do not summarize away technical detail; condense only filler/repetition. md2html **restructures**, it does not **abridge**: a reader holding only the HTML must be able to reconstruct every claim, definition, derivation step, number, and caveat of the source. If a sentence feels "too detailed to keep", that's usually the sentence the author cared about most.
-4. **Fidelity sweep** — before building, re-walk the source against the **component sections** of `content.html` (MD blocks are verbatim, so they need no sweep) and check off: every display equation still a display equation, every inline formula still math, every table row, list item, numeric fact, file/column name, and cross-reference present. Fix gaps now — this catch-step is cheap, a thin output is a rewrite.
-5. **Run the assembler** (script path relative to this SKILL.md):
+3. **Fidelity sweep** — before building, re-walk the source against the **component sections** of `content.html` (MD blocks are verbatim, so they need no sweep) and check off: every display equation still a display equation, every inline formula still math, every table row, list item, numeric fact, file/column name, and cross-reference present. Fix gaps now — this catch-step is cheap, a thin output is a rewrite.
+4. **Run the assembler** (script path relative to this SKILL.md):
 
    ```bash
    python3 <skill-dir>/scripts/build.py \
-     --meta <parts>/meta.json --toc <parts>/toc.html \
+     --meta <parts>/meta.json \
      --content <parts>/content.html --out <output>.html --render-check
-   # short doc without a sidebar: omit --toc and add --no-toc
+   # short doc without a sidebar: add --no-toc
    ```
 
-   It converts the MD blocks, substitutes placeholders, injects your fragments, then verifies: no leftover `{{PLACEHOLDER}}`, every anchor resolves to an `id`, every `svg.dg` has the fixed root tag, is well-formed, references only the shared markers, keeps text inside known containers, and every node label fits its shape (width estimate), no raw `<` inside math or `<pre><code>` (write `&lt;` — the browser otherwise parses `<y…` as a tag and the text vanishes), no emoji glyphs, balanced math delimiters (`\(`/`\)`, even `$$` count), and no math-like unicode squeezed into `<code>` spans. `--render-check` then loads the file in headless Chrome/Chromium/Edge and fails on any KaTeX error, a diagram label that overflows its node, or a diagram drawn outside its viewBox — always pass it; when no browser is installed it prints "render check skipped" and the static checks stand alone. On `BUILD FAILED`, fix the named problem in your part file and re-run. If the math-glyph check flags a `<code>` span that is genuinely code (a unit like `10μs`, a variable named `λ`), re-run with `--allow-unicode-math-in-code` instead of rewriting it as math. On `BUILD OK`, delete the `.md2html-parts/` directory.
+   It converts the MD blocks, substitutes placeholders, builds the TOC, injects your content, then verifies: no leftover `{{PLACEHOLDER}}`, every anchor resolves to an `id`, every `svg.dg` has the fixed root tag, is well-formed, references only the shared markers, keeps text inside known containers, and every node label fits its shape (width estimate), no raw `<` inside math or `<pre><code>` (write `&lt;` — the browser otherwise parses `<y…` as a tag and the text vanishes), no emoji glyphs, balanced math delimiters (`\(`/`\)`, even `$$` count), and no math-like unicode squeezed into `<code>` spans. `--render-check` then loads the file in headless Chrome/Chromium/Edge and fails on any KaTeX error, a diagram label that overflows its node, or a diagram drawn outside its viewBox — always pass it; when no browser is installed it prints "render check skipped" and the static checks stand alone. On `BUILD FAILED`, fix the named problem in your part file and re-run. If the math-glyph check flags a `<code>` span that is genuinely code (a unit like `10μs`, a variable named `λ`), re-run with `--allow-unicode-math-in-code` instead of rewriting it as math. On `BUILD OK`, delete the `.md2html-parts/` directory.
 
-   **Fallback** — if `python3` is unavailable in your environment: read `template.html`, build the full output buffer in memory (placeholders + TOC + content slot between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`), `Write` once, and run the checks listed above (leftover placeholders, anchors, SVG diagram rules (§6), emoji, math delimiters, math glyphs in `<code>`) manually by re-reading your generated sections.
+   **Fallback** — if `python3` is unavailable in your environment: read `template.html`, build the full output buffer in memory (placeholders + TOC entries per §2 in components.md + content slot between `<!-- CONTENT_START -->` and `<!-- CONTENT_END -->`), `Write` once, and run the checks listed above (leftover placeholders, anchors, SVG diagram rules (§6), emoji, math delimiters, math glyphs in `<code>`) manually by re-reading your generated sections.
 
 ### Step 4 — Report
 
@@ -148,8 +147,8 @@ offline; no npm/pip install.
 
 - **Source has no headings** — wrap content in one `<h2 id="content">Content</h2>` (KO: `내용`) and infer logical breaks from blank lines + topic shifts.
 - **Source has existing mermaid code blocks** — if it's a simple flowchart (linear / one fan-out, ≤ ~8 nodes), convert it to the native flow component (§6b); anything else is redrawn as an SVG diagram (§6) from the same nodes and edges. Never paste mermaid source into the output.
-- **Source has HTML embedded** — pass through as-is inside `<div>` if safe, else escape.
-- **Source is very short (< 200 words, or < 400 characters for CJK)** — skip the TOC sidebar: omit `--toc` and pass `--no-toc` to `build.py` (it removes the sidebar and the mobile drawer trigger for you).
+- **Source has HTML embedded** — inline `<br>`, `<sup>`, `<sub>`, `<kbd>` survive MD blocks; a section with other HTML (`<details>`, `<img width=…>`) becomes a component section.
+- **Source is very short (< 200 words, or < 400 characters for CJK)** — skip the TOC sidebar: pass `--no-toc` to `build.py` (it removes the sidebar and the mobile drawer trigger for you).
 - **Source is very long (> 5000 words)** — collapse low-priority sections by default with `<details>`.
 - **Output file already exists** — overwrite. The source `.md` is canonical; HTML is regenerated artifact.
 

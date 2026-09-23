@@ -61,7 +61,9 @@ For each Step:
 - **Technique**: the refactoring to apply
 - **Target**: file:line or function/class name
 - **Change**: concretely what changes, and how
-- **Affected files**: other files this change requires editing
+- **Affected files**: every file this Step changes or creates, the
+  target included — the list the orchestrator checks `git status --short`
+  against
 - **Risk**: low/medium/high + why
 - **Rollback**: how to undo on failure
 
