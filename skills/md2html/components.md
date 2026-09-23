@@ -76,6 +76,7 @@ These values go into `meta.json` (keys `TITLE`, `SUBTITLE`, `DOC_TYPE`, `SOURCE_
 <a href="#subsection-id" class="lvl-3">Sub-section name</a>
 ```
 
+- `build.py` generates these from the final heading ids; write them by hand only in the no-python3 Fallback (SKILL.md Step 3).
 - One `<a>` per H2/H3 in the document.
 - The `href` must match an `id="..."` on the target heading: `<h2 id="section-id">...</h2>`.
 - Use `class="lvl-2"` for top-level (H2), `class="lvl-3"` for nested (H3). Skip H4 to avoid clutter.
@@ -833,7 +834,7 @@ Apply these heuristics while reading the source `.md`:
 The title auto-wraps (`text-wrap: balance`) with responsive `clamp(28px, ...)` font-size. Nothing extra needed.
 
 ### 14f. Empty TOC (source has no H2)
-Wrap the body in one `<h2 id="content">` (see SKILL.md Edge cases) so the TOC has one entry, or omit `--toc` and pass `--no-toc` to `build.py` — it strips the sidebar and the mobile trigger. `build.py` rejects an empty `toc.html`; the JS auto-hide of `<aside class="toc">` only applies in the manual fallback (no `python3`).
+Wrap the body in one `<h2 id="content">` (see SKILL.md Edge cases) so the TOC has one entry, or pass `--no-toc` to `build.py` — it strips the sidebar and the mobile trigger. `build.py` fails when the body has no `<h2 id>`/`<h3 id>`; the JS auto-hide of `<aside class="toc">` only applies in the manual fallback (no `python3`).
 
 ### 14g. Long URLs / identifiers
 `.content` already has `overflow-wrap: anywhere` — long URLs/identifiers wrap without breaking the layout.

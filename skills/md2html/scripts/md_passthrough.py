@@ -10,15 +10,16 @@ mechanical 80% of the document can no longer lose a table row or a
 number in transcription.
 
 Supported (stdlib only, CommonMark subset):
-  headings (#..######, optional `{#custom-id}`) → <hN id="slug">
+  headings (#..######, optional `{#custom-id}`) → <hN id="slug">, GitHub-style slugs
   paragraphs, hard breaks (two trailing spaces)
   fenced code ``` / ~~~ with language → <pre><code class="language-x">
   blockquotes, horizontal rules
   ul / ol with indentation nesting, task lists
   pipe tables (≥ 4 columns → wrapped in .table-wrap)
-  inline: `code`, **bold**, *em*, ~~del~~, [text](url), ![alt](src), autolinks
-  math: $$…$$ (display, own <p>), $…$ / \\(…\\) (inline → \\(…\\)), \\[…\\] → $$…$$
-  Raw HTML in a block is escaped, not passed through.
+  inline: `code`, **bold**, *em*, ~~del~~, [text](url), ![alt](src),
+          autolinks (bare URLs and <url>), backslash escapes (\\$, \\_, \\*)
+  math: $$…$$ (display, own <p>, may span lines), $…$ / \\(…\\) (inline → \\(…\\)), \\[…\\] → $$…$$
+  Raw HTML in a block is escaped, except inline <br>, <sup>, <sub>, <kbd>.
 """
 from __future__ import annotations
 
@@ -35,14 +36,16 @@ _OL_RE = re.compile(r"^(?P<indent>\s*)(?P<num>\d{1,9})[.)]\s+(?P<text>.*)$")
 _TASK_RE = re.compile(r"^\[(?P<mark>[ xX])\]\s+(?P<text>.*)$")
 _TABLE_SEP_RE = re.compile(r"^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$")
 _DISPLAY_MATH_RE = re.compile(r"^\s*(\$\$.*?\$\$|\\\[.*?\\\])\s*$", re.S)
+_ESCAPABLE = set("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")  # CommonMark backslash escapes
+_AUTOLINK_RE = re.compile(r"<([A-Za-z][A-Za-z0-9+.\-]{1,31}:[^\s<>]*)>")
 
 
 def slugify(text: str, used: set[str]) -> str:
-    """Kebab-case id from heading text; letters, digits and Hangul survive."""
-    plain = re.sub(r"`([^`]*)`", r"\1", text)
-    plain = re.sub(r"[*_~]", "", plain).lower()
-    slug = re.sub(r"[^\w가-힣]+", "-", plain).strip("-") or "section"
-    base, n = slug, 2
+    """GitHub-style id from rendered heading text: lowercase, punctuation
+    dropped, each space → '-', letters (Hangul too), digits, '_' and '-' kept;
+    a repeat gets -1, -2, … so the source's own `#…` links resolve."""
+    slug = re.sub(r"[^\w\- ]", "", text.lower()).replace(" ", "-") or "section"
+    base, n = slug, 1
     while slug in used:
         slug, n = f"{base}-{n}", n + 1
     used.add(slug)
@@ -77,6 +80,8 @@ class _Inline:
         text = re.sub(r"(?<![\w_])_(?=\S)(.+?)(?<=\S)_(?![\w_])", r"<em>\1</em>", text)
         text = re.sub(r"~~(?=\S)(.+?)(?<=\S)~~", r"<del>\1</del>", text)
         text = re.sub(r"  $", "<br>", text, flags=re.M)
+        text = re.sub(r"&lt;br\s*/?&gt;", "<br>", text)
+        text = re.sub(r"&lt;(/?)(sup|sub|kbd)&gt;", r"<\1\2>", text)
         return re.sub(r"\x00(\d+)\x00", lambda m: self.slots[int(m.group(1))], text)
 
     def _protect_math_and_code(self, text: str) -> str:
@@ -91,6 +96,17 @@ class _Inline:
                     rendered = (f"\\({_esc(body)}\\)" if close == "\\)" else f"$${_esc(body)}$$")
                     out.append(self._stash(rendered))
                     i = j + 2
+                    continue
+            if ch == "\\" and i + 1 < n and text[i + 1] in _ESCAPABLE:
+                out.append(self._stash(_esc(text[i + 1])))
+                i += 2
+                continue
+            if ch == "<":
+                m = _AUTOLINK_RE.match(text, i)
+                if m:
+                    url = m.group(1)
+                    out.append(self._stash(f'<a href="{html.escape(url)}">{_esc(url)}</a>'))
+                    i = m.end()
                     continue
             if ch == "$":
                 if text.startswith("$$", i):
@@ -180,6 +196,11 @@ class _Block:
             if _UL_RE.match(line) or _OL_RE.match(line):
                 i = self._list(lines, i, out)
                 continue
+            if _math_opener(line):
+                j = self._display_math(lines, i, out)
+                if j is not None:
+                    i = j
+                    continue
             if "|" in line and i + 1 < n and _TABLE_SEP_RE.match(lines[i + 1]):
                 i = self._table(lines, i, out)
                 continue
@@ -189,11 +210,11 @@ class _Block:
     # -- leaf blocks -------------------------------------------------------
     def _heading(self, m: re.Match) -> str:
         level = max(2, len(m.group("hashes")))  # H1 is the document title; body starts at H2
-        text = m.group("text").strip()
-        hid = m.group("id") or slugify(text, self.used_ids)
+        rendered = self.inline.run(m.group("text").strip())
+        hid = m.group("id") or slugify(html.unescape(re.sub(r"<[^>]+>", "", rendered)), self.used_ids)
         if m.group("id"):
             self.used_ids.add(hid)
-        return f'<h{level} id="{hid}">{self.inline.run(text)}</h{level}>'
+        return f'<h{level} id="{hid}">{rendered}</h{level}>'
 
     def _fence(self, lines: list[str], i: int, m: re.Match, out: list[str]) -> int:
         fence, lang, indent = m.group("fence"), m.group("lang"), len(m.group("indent"))
@@ -205,6 +226,21 @@ class _Block:
         cls = f' class="language-{_esc(lang)}"' if lang else ""
         out.append(f"<pre><code{cls}>{_esc(chr(10).join(body))}</code></pre>")
         return i + 1
+
+    def _display_math(self, lines: list[str], i: int, out: list[str]) -> int | None:
+        """Display math opened by a `$$` / `\\[` line that does not close on it.
+        Lines up to the closer are formula text, so `+ …` / `- …` never become
+        list items. Returns the next line index, or None if unclosed."""
+        opener = lines[i].strip()
+        close = "$$" if opener.startswith("$$") else "\\]"
+        for j in range(i + 1, len(lines)):
+            if not lines[j].strip():
+                return None
+            if lines[j].rstrip().endswith(close):
+                body = "\n".join([opener[2:]] + lines[i + 1:j] + [lines[j].rstrip()[:-2]])
+                out.append(f"<p>$${_esc(body.strip())}$$</p>")
+                return j + 1
+        return None
 
     def _blockquote(self, lines: list[str], i: int, out: list[str]) -> int:
         inner: list[str] = []
@@ -218,6 +254,8 @@ class _Block:
     def _paragraph(self, lines: list[str], i: int, out: list[str]) -> int:
         buf: list[str] = []
         while i < len(lines) and lines[i].strip() and not _is_block_start(lines[i]):
+            if buf and _math_opener(lines[i]):
+                break  # a multi-line display formula starts its own block
             buf.append(lines[i].rstrip("\n"))
             i += 1
             # a display-math line closes the paragraph on its own
@@ -289,7 +327,8 @@ class _Block:
             task = _TASK_RE.match(first)
             if task:
                 checked = " checked" if task.group("mark").lower() == "x" else ""
-                first_html = f'<input type="checkbox" disabled{checked}> {self.inline.run(task.group("text"))}'
+                first_html = (f'<input type="checkbox" class="task-list-item-checkbox" disabled{checked}> '
+                              f'{self.inline.run(task.group("text"))}')
             else:
                 first_html = self.inline.run(first)
             li = [first_html]
@@ -298,7 +337,8 @@ class _Block:
                 li.append("\n" + "\n".join(self._blocks(trailing)))
             if nested:
                 li.append("\n" + self._render_list(nested))
-            parts.append(f"<li>{''.join(li)}</li>")
+            li_cls = ' class="task-list-item"' if task else ""
+            parts.append(f"<li{li_cls}>{''.join(li)}</li>")
             k = k2
         parts.append(f"</{tag}>")
         return "\n".join(parts)
@@ -341,6 +381,12 @@ def _split_row(line: str) -> list[str]:
             k += 1
     cells.append("".join(cur).strip())
     return cells
+
+
+def _math_opener(line: str) -> bool:
+    """A line that opens display math without closing it (`$$`, `$$ a +`, `\\[`)."""
+    s = line.strip()
+    return s.startswith(("$$", "\\[")) and ("$$" if s.startswith("$$") else "\\]") not in s[2:]
 
 
 def _is_block_start(line: str) -> bool:

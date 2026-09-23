@@ -83,7 +83,7 @@ wrong target or produce results that cannot be compared:
   NEEDS_CONTEXT produces confident-looking wrong analysis.
 - **Treat subagent reports as claims, not evidence.** Anything cheap to
   re-check in the main conversation (a test command's exit status,
-  `git diff --stat` against the planned scope), re-check before acting
+  `git status --short` against the planned scope), re-check before acting
   on the report.
 - **Inline execution** (Medium by default, or when subagents are
   unavailable): read the same agent file directly and perform the phases
@@ -228,7 +228,8 @@ pointing at the same file:line or the same mechanism (e.g. Analyze's God
 Class and Architecture's God Object) are combined into one, keeping the
 more concrete evidence. If the Analyze report says the target has no
 tests, this checkpoint also asks whether Step 0 (characterization tests)
-goes into the plan — see pre-flight check 3.
+goes into the plan — see pre-flight check 3. Where ① is combined with
+②, ask this one question before Phase 3.
 
 Before reporting, **sample-verify each report**: open 2–3 of its cited
 file:line claims and compare against the code. If even one is wrong,
@@ -257,7 +258,7 @@ fails, the previous Steps must remain valid — that is what makes
 per-step rollback work.
 
 **Checkpoint ②**: report the plan and risks to the user before Phase 4.
-For small sizes, checkpoints ① and ② may be combined. Explicit approval
+For Small and Medium sizes, checkpoints ① and ② are combined. Explicit approval
 is mandatory when a public API change is included, one Step touches 5+
 files, tests are missing or red, or the user asked for review/approval
 before execution. For large work, prefer confirmation before Phase 4
@@ -280,12 +281,14 @@ When delegating a Step, paste the **full Step text** from the plan
 (technique, target, change, affected files, risk, rollback) into the spawn
 prompt — the subagent cannot see the plan, and a pointer forces it to
 re-derive one. After the subagent reports green, verify before the
-checkpoint commit: `git diff --stat` must match the Step's
-affected-files list, and the test command must have actually run.
+checkpoint commit: `git status --short` (it lists new files too) must
+match the Step's affected-files list, and the test command must have
+actually run.
 
 Each Step applies one technique, runs the check commands (tests, plus
-typecheck/build when present), and on green proposes an intermediate
-commit. Red means roll back and retry in smaller units. Rename / Move /
+typecheck/build when present), and on green (no test that passed before
+the Step now fails) proposes an intermediate commit. Red means roll back
+and retry in smaller units. Rename / Move /
 signature Steps additionally confirm the old identifier has no remaining
 references. Procedure, per-technique note, and guardrails:
 `agents/execute.md`.
@@ -320,7 +323,7 @@ to keep them as regression tests or remove them.
 | Checkpoint | When | Skippable? |
 |------------|------|------------|
 | ① Analysis + review results | After Phase 2 | Combined with ② for Small and Medium |
-| ② Execution plan | After Phase 3 | Never when a public API changes |
+| ② Execution plan | After Phase 3 | Never when a Phase 3 approval gate applies |
 | ③ Final results | After Phase 5 | No — always report |
 
 Checkpoints are the cheapest insurance against the two most common

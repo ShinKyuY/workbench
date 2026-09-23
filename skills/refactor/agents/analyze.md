@@ -97,9 +97,9 @@ the report only.
   **typecheck** (tsc, mypy, pyright, cargo check, go vet, ...),
   **build**, **lint**
 - Run each one that exists and record exit status and warning count.
-  Tests must be currently green. These commands are what Execute runs
-  after every Step and what Verify compares against, so record them
-  verbatim
+  Record currently failing tests by name. These commands are what
+  Execute runs after every Step and what Verify compares against, so
+  record them verbatim
 
 ### 4. Record baseline metrics (Baseline 지표 기록)
 

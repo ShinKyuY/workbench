@@ -6,8 +6,8 @@ Usage:
 
 Checks every `path:line` / `path:start-end` citation in the document
 (file exists under the repo root, line numbers within file length) and
-lints Mermaid blocks (direction stated, bracket labels quoted,
-subgraph/end balanced). Exit 0 when clean, 1 when anything fails.
+lints Mermaid blocks (direction stated, labels with brackets/parens
+quoted, subgraph/end balanced). Exit 0 when clean, 1 when anything fails.
 
 Stdlib only. Sample-verification of *meaning* (does the cited code say
 what the report claims?) stays a human/orchestrator job — this script
@@ -32,7 +32,15 @@ URL_RE = re.compile(r"\bhttps?://\S+|\bwww\.\S+")
 # because existence is checked first.
 HOSTLIKE_EXTS = {"com", "net", "org", "io", "ai", "dev"}
 DIRECTIONS = {"TD", "TB", "BT", "LR", "RL"}
-UNQUOTED_BRACKET_RE = re.compile(r"\w\[(?!\")[^\]\"]*\[")
+QUOTED_RE = re.compile(r'"[^"]*"')
+# After quoted labels are removed: an id + opener whose text holds another
+# opener (A[Conv2d(3)], A(x [B]), A[d {k}]), or an edge label right after an
+# arrow (-->|f(x)|, ==> |[B]|) that holds one. Anchoring the pipe to the arrow
+# keeps chained edges (A -->|a| B[y] -->|b| C) from matching.
+UNQUOTED_LABEL_RE = re.compile(
+    r"\w[\[({][^\])}\[({|]+[\[({]"
+    r"|(?:[-=>.]|--[ox])\s*\|[^|]*[\[\](){}][^|]*\|"
+)
 
 
 def line_count(path: Path, cache: dict) -> int:
@@ -158,9 +166,9 @@ def check_mermaid(doc_text: str) -> tuple[int, list[str]]:
             )
         if flowchart:
             for l in meaningful:
-                if UNQUOTED_BRACKET_RE.search(l):
+                if UNQUOTED_LABEL_RE.search(QUOTED_RE.sub('""', l)):
                     failures.append(
-                        f"block at doc line {start}: unquoted [..] inside a node label: {l[:60]}"
+                        f"block at doc line {start}: unquoted label with brackets/parens: {l[:60]}"
                     )
             subs = sum(1 for l in meaningful if l.startswith("subgraph"))
             ends = sum(1 for l in meaningful if l == "end")
