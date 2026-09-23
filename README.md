@@ -31,9 +31,9 @@ claude plugin update workbench@shinkyuy
 
 업데이트 후 새로 시작하는 세션부터 적용됩니다.
 
-## 전역 지침 (CLAUDE.md / AGENTS.md)
+## 전역 지침 (AGENTS.md / CLAUDE.md)
 
-[`CLAUDE.md`](./CLAUDE.md)(Claude Code용)와 [`AGENTS.md`](./AGENTS.md)(Codex CLI 등 기타 에이전트용, `CLAUDE.md`의 symlink)는
+[`AGENTS.md`](./AGENTS.md)(Codex CLI 등 에이전트용 원본)와 [`CLAUDE.md`](./CLAUDE.md)(Claude Code용, `AGENTS.md`의 symlink)는
 플러그인 설치와 **무관하게 동봉만** 된 파일입니다.
 설치해도 자동 적용되지 않으며, 원하는 사람만 본인 전역 지침에 복사해서 사용하세요.
 
