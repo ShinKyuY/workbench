@@ -57,10 +57,10 @@ recorded, or really none?". References is the one section to omit when
 empty.
 
 Additional rules:
-- **Repro commands: only ones actually run** — run them and check the
-  output before writing them down. Mark commands you could not run with
-  `(unverified)` — an unverified command turns the next agent's first
-  30 seconds into debugging.
+- **Repro commands: run before writing** — run each command and check
+  its output before writing it down. Mark any you could not run
+  `(unverified)` — an unmarked broken command turns the next agent's
+  first 30 seconds into debugging.
 - **Decision-log bar**: record only decisions/failures that would change
   the next agent's behavior — a bloated log buries the ones that matter.
 - **No secrets**: never write tokens/passwords/credentials in plain

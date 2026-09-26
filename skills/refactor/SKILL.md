@@ -103,7 +103,7 @@ keeps both out.
 | Phase | Default | May become | When |
 |-------|---------|------------|------|
 | 1 Analyze | 1 agent | 2–14 scoped shards (hard cap 14) | Large target spanning 2+ module/directory boundaries, roughly 10+ files |
-| 2 Architecture | 1 agent | 2–14 lens agents, whole view each (hard cap 14) | Large target; split by lens, never by scope |
+| 2 Architecture | 1 agent | 2–5 lens agents, whole view each (one per lens at most) | Large target; split by lens, never by scope |
 | 3 Plan | 1 agent | never sharded | — |
 | 4 Execute | 1 per Step, sequential | never parallel | — |
 | 5 Verify | 1 agent | 2 (test run ∥ metrics) | slow test suite or large baseline table |
@@ -132,7 +132,7 @@ model — they carry the judgment-heavy work.
 
 **Merging shard reports (at Checkpoint ①):** before the normal
 Analyze+Architecture merge, combine the shard baseline tables into one
-(max of maxes, counts summed, averages recomputed weighted by lines) and
+(max of maxes, counts summed, averages recomputed weighted by function count) and
 dedup signs across shards. Treat **similar signs reported by two or more
 shards as a finding in itself** — cross-module duplication and
 re-implemented utilities are invisible to any single shard and surface
@@ -141,12 +141,12 @@ only at this merge.
 **Phase 2 splits by lens, never by scope:** circular dependencies,
 layer violations, and coupling exist only in the whole-system view — a
 module-scoped shard destroys the very signal it looks for. When a Large
-target is too much for one agent, fan out into 2–14 **lens agents**
-(hard cap 14), each given the **whole** target but a single concern:
+target is too much for one agent, fan out into 2–5 **lens agents**,
+each given the **whole** target and one or more of the five concerns:
 dependencies / SOLID / anti-patterns / layering / extensibility
 (definitions in architecture.md "Lens mode"). Hand each agent the
 module inventory and entrypoints — Phase 2 reads import graphs, not
-every line, so reading the same structure up to 14 times is acceptable.
+every line, so reading the same structure up to 5 times is acceptable.
 
 **Why Phase 4 never parallelizes:** each green test run is the safety
 gate for the next Step. Parallel Steps racing one working tree turn

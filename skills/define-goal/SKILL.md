@@ -112,9 +112,9 @@ outcome happening?
 > Weak: "Keep investigating the PR comments."
 >
 > Strong: "Resolve the change-requesting review comments on PR 123,
-> touching only the affected auth files and tests; verify with the auth
-> test command plus `gh pr view 123` showing no unresolved change-request
-> threads."
+> touching only the affected auth files; verify with the existing auth
+> tests (unchanged and green) plus `gh pr view 123` showing no
+> unresolved change-request threads."
 
 **Refactoring** (behavior parity):
 
