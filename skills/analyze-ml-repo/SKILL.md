@@ -262,10 +262,14 @@ section order stays fixed.
 The full template applies to whole-repo analyses. For a partial
 dispatch (only some roles ran), keep the End-to-end workflow section
 plus the sections owned by the dispatched roles, renumber them, and
-open the document with one line stating what is and is not covered.
+state what is and is not covered in Scope and assumptions.
 
 ```markdown
 # [Project] Analysis
+
+## Scope and assumptions
+(What is and is not covered, the scope choice and any target grouping
+from Step 2, and unverified items carried over from the agent reports.)
 
 ## End-to-end workflow
 (Top-level system diagram — data prep -> training -> inference ->
