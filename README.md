@@ -10,7 +10,6 @@ Claude Code 커스텀 스킬 모음 플러그인.
 | `handoff` | 다음 세션/에이전트가 cold start로 이어받을 수 있는 HANDOFF.md 생성 |
 | `analyze-ml-repo` | ML/AI 모델 레포 구조 분석 (데이터 흐름, 텐서 형상, 학습 파이프라인) |
 | `refactor` | 코드 결함 분석 → 아키텍처 점검 → 계획 → 실행 → 검증 리팩토링 파이프라인 |
-| `md2html` | 장문 Markdown을 KaTeX 수식, 네이티브 플로우 다이어그램, 와이어프레임, SVG 다이어그램, TOC 포함 단일 테마 HTML로 변환 |
 | `parquet-viewer` | Parquet 파일을 브라우저 테이블 뷰어로 탐색 |
 
 ## 설치
@@ -20,7 +19,7 @@ Claude Code 커스텀 스킬 모음 플러그인.
 /plugin install workbench@shinkyuy
 ```
 
-스킬은 자동으로 트리거되며, 직접 호출 시 네임스페이스가 붙습니다 (예: `/workbench:md2html`).
+스킬은 자동으로 트리거되며, 직접 호출 시 네임스페이스가 붙습니다 (예: `/workbench:refactor`).
 
 ## 업데이트
 
@@ -46,9 +45,6 @@ cp AGENTS.md ~/.codex/AGENTS.md
 또는 필요한 섹션만 골라 붙여넣어도 됩니다.
 
 ## 라이선스
-
-`md2html`은 [haidang1810/md2html](https://github.com/haidang1810/md2html) 기반이며
-해당 디렉터리의 LICENSE를 따릅니다.
 
 `define-goal`은 [openai/skills](https://github.com/openai/skills)의
 `.curated/define-goal`(Apache License 2.0)을 기반으로 수정한 파생물이며,
