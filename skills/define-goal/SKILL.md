@@ -29,7 +29,8 @@ outcome, just do the work — goal ceremony on a clear task is friction.
 
 A usable goal names:
 
-- **Outcome** — the specific thing that will be true when done
+- **Outcome** — the specific thing that will be true when done, and the
+  problem it removes for whom (every check below is a proxy for this)
 - **Artifact** — the system / repo / environment / behavior involved
 - **Verification** — how completion is proven: command, metric + threshold,
   or review rubric
@@ -75,9 +76,10 @@ A usable goal names:
 Rewrite a vague goal into an observable one when context makes the rewrite
 safe. Reject pure activity goals ("make progress", "keep investigating",
 "되게 만들어줘") until sharpened. Ask at most **three** questions, and only when a safe
-rewrite risks the wrong outcome — target the missing validator or scope:
-"Success by latency, cost, or accuracy?", "Verify against local, staging,
-or prod?", "Minimum evidence before marking complete?". If no metric
+rewrite risks the wrong outcome — target the missing purpose, validator,
+or scope: "What prompted this, and who hits it?", "Success by latency,
+cost, or accuracy?", "Verify against local, staging, or prod?", "Minimum
+evidence before marking complete?". If no metric
 exists, propose the most honest binary validator and ask to confirm.
 
 ### 5. Deliver — 대화로 제시하고, 파일은 필요할 때만
@@ -131,7 +133,7 @@ For large / long-horizon work, freeze the target so the agent doesn't
 build "something impressive but wrong":
 
 ```
-Goal:       <the outcome that will be true>
+Goal:       <the outcome that will be true, and the problem it removes for whom>
 Non-goals:  <what is explicitly out of scope>
 Constraints:<perf / platform / determinism / files allowed to change>
 Baseline:   <current measured value, or how to measure it>
