@@ -9,7 +9,11 @@ from urllib.parse import parse_qs, urlparse
 import pandas as pd
 import pyarrow.dataset as pads
 
+# 100 rows keeps each JSON response and table render quick even for wide
+# tables, while one page still shows enough rows to scan by eye.
 PAGE_SIZE = 100
+# Probe this many ports from --port upward: room for several viewers left
+# running side by side, while a crowded range still fails fast.
 PORT_TRIES = 20
 
 HTML = r"""<!DOCTYPE html>

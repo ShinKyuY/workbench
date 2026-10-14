@@ -9,7 +9,7 @@ description: >-
 
 # Define Goal — 목표 정의 스킬
 
-Shape the user's intent into an objective an agent can pursue **honestly**
+Shape the user's intent into a goal an agent can pursue **honestly**
 and **prove it finished** (정직하게 추구하고 끝났음을 증명할 수 있는 목표).
 Prefer observable outcomes, explicit evidence, and bounded scope over
 activity: a goal naming only *activity* ("keep improving", "되게 해줘")
@@ -62,7 +62,7 @@ A usable goal names:
   optimize the proxy — sometimes by cheating it. Avoid "pass at all costs"
   phrasing. "Tests pass" alone is unsafe: assertions can be rewritten to
   `True`, checks weakened, logs silenced. Tie success to the *behavior* the
-  tests prove and keep the verifier outside the agent's edit scope
+  tests prove and keep the validator outside the agent's edit scope
   ("existing `test_checkout` unchanged and green"). For research / ops
   goals, require the answer be backed by citable evidence (sources, logs,
   run IDs), not just asserted.
@@ -84,7 +84,7 @@ exists, propose the most honest binary validator and ask to confirm.
 
 ### 5. Deliver — 대화로 제시하고, 파일은 필요할 때만
 
-Present the objective as one concise statement — verification evidence and
+Present the goal as one concise statement — verification evidence and
 scope **inside** it, phrased as a prompt a fresh agent can act on. Write it
 to a file only when the user gave a path or asked for a file, or when the
 work is large / long-horizon — then use the frozen-goal block (default
@@ -93,21 +93,22 @@ also bake in the plan-first requirement (see "Plan for complex goals").
 
 ## Quality Bar — 최종 점검
 
-Reread the finished objective against the five Draft elements, then ask
+Reread the finished goal against the five Draft elements, then ask
 two more: would a second reviewer reach the same pass/fail verdict from
 the text alone, and could the stated check be gamed without the real
 outcome happening?
 
 ## Examples — Weak → Strong
 
-**Performance** (baseline + tamper-resistant validator):
+**Performance** (purpose + baseline + tamper-resistant validator):
 
 > Weak: "Make checkout faster."
 >
 > Strong: "Reduce checkout API p95 latency from the current 480 ms to below
 > 250 ms on the documented slow path with the smallest safe server-side
-> change; verify with `npm run test:checkout` (unchanged) and the latency
-> benchmark showing p95 < 250 ms across 3 consecutive runs."
+> change, so mobile shoppers stop timing out at payment; verify with
+> `npm run test:checkout` (unchanged) and the latency benchmark showing
+> p95 < 250 ms across 3 consecutive runs."
 
 **Review work** (scope-bounded + evidence):
 
@@ -157,8 +158,6 @@ implementing**, **checks it covers every "Done when" item**, and
 **updates it at each milestone boundary**. The goal stays frozen; the
 plan is the living document — a plan change that would alter the goal's
 outcome, thresholds, or scope is a Stop & ask, not a plan update.
-Interface and contract decisions live pinned in the plan's `Decisions:`
-section.
 
 Read [references/plan.md](references/plan.md) when defining a complex
 goal — the full standard (zero-context, no placeholders, milestone

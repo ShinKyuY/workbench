@@ -3,10 +3,7 @@
 The goal (`goal.md`) is the frozen success authority. The plan
 (`plan.md`) is the living execution document the executor writes
 **before implementing** and maintains at every milestone boundary. This
-file is the standard the goal text should hold that plan to — when
-defining a complex goal, point the executor here, or copy the template
-below into the goal if the executor won't have access to this skill's
-files.
+file is the standard the goal text should hold that plan to.
 
 ## Why plan-first
 
@@ -14,8 +11,7 @@ A frozen goal alone tells the agent *what* must be true, but on long
 work each step's *approach* gets re-derived from scratch — agents drift,
 redo decisions, or silently switch approach mid-run. A referenced plan
 pins those decisions between sessions while the goal stays the only
-authority on success. Interface and contract decisions live in the
-plan's `Decisions:` section (rule 4 below).
+authority on success.
 
 ## Quality rules (품질 규칙)
 

@@ -8,16 +8,6 @@ framework(s) the repo uses. A repo may mix frameworks (e.g. a HF
 Transformers model trained with a custom PyTorch loop) — read every
 matching column.
 
-## How to identify the framework first
-
-Check imports and dependency files before anything else:
-
-- `import torch` / `torch` in `requirements.txt` or `pyproject.toml` → **PyTorch**
-- `import jax`, `flax`, `import haiku` → **JAX / Flax / Haiku**
-- `import tensorflow`, `from tensorflow import keras` → **TF / Keras**
-- `from transformers import ...`, `transformers` dependency → **HF Transformers**
-  (sits on top of PyTorch **or** TF/JAX — identify the backend too)
-
 ## Signature table
 
 | Concern | PyTorch | JAX / Flax | TF / Keras | HF Transformers |
@@ -50,7 +40,7 @@ Check imports and dependency files before anything else:
   `AutoModel` wrapper. Shapes and config numbers (`hidden_size`,
   `num_attention_heads`, `num_hidden_layers`) come from `config.json` /
   the `*Config` class — read that first, then trace the block classes.
-- **PyTorch**: default and most detailed path; the `SKILL.md`
+- **PyTorch**: default and most detailed path; the agent
   procedures assume it.
 
 ## Beyond these columns — deriving cues for unfamiliar stacks

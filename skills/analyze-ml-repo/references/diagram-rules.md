@@ -1,5 +1,14 @@
 # Diagram Rules (다이어그램 규칙)
 
+## Contents
+- Format table, common rules, Mermaid rules
+- D1. End-to-end pipeline diagram (required)
+- D2. Data shape transition table (required)
+- D3. Model forward pass diagram (required)
+- D4. Structural pattern visualization (when applicable)
+- D5. Model comparison table (required with 2+ models)
+- D6. Checkpoint/output directory structure (required)
+
 The final markdown document must include the diagrams below; a
 partial analysis includes D1 plus only the diagrams of the sections
 it keeps. Complex
