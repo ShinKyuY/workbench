@@ -1,7 +1,7 @@
 ---
 name: parquet-viewer
 description: >-
-  Launch a browser table viewer for Parquet files (single file,
+  Launches a browser table viewer for Parquet files (single file,
   multi-part directory, HDFS download). Use when the user wants to
   view, inspect, or preview parquet data — "parquet 열어줘",
   "데이터 미리보기", "테이블 뷰어".
@@ -84,7 +84,7 @@ kill the old server first — a stale server still serving the same data
 confuses the user.
 
 ```bash
-lsof -ti:<port> | xargs kill
+lsof -ti:<port> -sTCP:LISTEN | xargs kill
 ```
 
 ## Viewer features

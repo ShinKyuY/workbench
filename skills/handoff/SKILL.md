@@ -1,8 +1,8 @@
 ---
 name: handoff
 description: >-
-  Create/update HANDOFF.md so the next agent can take over from a cold
-  start. Use on any work-continuity request — "handoff", "continue in
+  Creates or updates HANDOFF.md so the next agent can take over from a
+  cold start. Use on any work-continuity request — "handoff", "continue in
   the next session", "인수인계", "다음 세션에서 이어서", "여기까지
   정리해줘" — or when ending a session with background jobs running,
   nearing the context limit, or delegating to another agent. Not for
@@ -32,8 +32,9 @@ Collect the following in parallel first:
 Then settle the scope:
 - If a HANDOFF.md exists but covers unrelated work, write
   `HANDOFF-<topic>.md` instead of overwriting it.
-- With several parallel tasks, confirm which one the user wants handed
-  off.
+- With several parallel workstreams, confirm which ones the user wants
+  handed off. Each gets its own `HANDOFF-<topic>.md` (e.g.
+  `HANDOFF-auth.md`).
 
 ### 2. Analyze the session
 
@@ -161,11 +162,8 @@ _(omit this section when there is nothing to list)_
 ### 4. Save and announce
 
 - Default path: `HANDOFF.md` at the working directory root.
-- With multiple independent workstreams in parallel, split into
-  `HANDOFF-<topic>.md` (e.g. `HANDOFF-auth.md`).
 - In a git repo, ask the user about adding it to `.gitignore` — the
   default is **do not commit** (it is session state, not a code asset).
-  Recommend committing only on explicit request.
 - After saving, tell the user the absolute path.
 
 ## Update logic (업데이트 로직)
