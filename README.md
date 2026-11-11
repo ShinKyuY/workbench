@@ -6,7 +6,6 @@ Claude Code 커스텀 스킬 모음 플러그인.
 
 | 스킬 | 설명 |
 |------|------|
-| `define-goal` | 모호한 의도를 측정/검증 가능한 목표로 변환 (성공 기준, 증거, 범위, 완료 조건) |
 | `handoff` | 다음 세션/에이전트가 cold start로 이어받을 수 있는 HANDOFF.md 생성 |
 | `analyze-ml-repo` | ML/AI 모델 레포 구조 분석 (데이터 흐름, 텐서 형상, 학습 파이프라인) |
 | `parquet-viewer` | Parquet 파일을 브라우저 테이블 뷰어로 탐색 |
@@ -42,9 +41,3 @@ cp AGENTS.md ~/.codex/AGENTS.md
 ```
 
 또는 필요한 섹션만 골라 붙여넣어도 됩니다.
-
-## 라이선스
-
-`define-goal`은 [openai/skills](https://github.com/openai/skills)의
-`.curated/define-goal`(Apache License 2.0)을 기반으로 수정한 파생물이며,
-해당 디렉터리의 `LICENSE.txt`를 따릅니다.

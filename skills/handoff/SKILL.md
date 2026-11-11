@@ -28,6 +28,7 @@ Collect the following in parallel first:
   Read it if present.
 - `git status`, `git diff --stat`, `git log --oneline -5` for the
   objective change state (skip if not a git repo).
+- `date '+%Y-%m-%d %H:%M'` for the header timestamp.
 
 Then settle the scope:
 - If a HANDOFF.md exists but covers unrelated work, write
@@ -162,8 +163,9 @@ _(omit this section when there is nothing to list)_
 ### 4. Save and announce
 
 - Default path: `HANDOFF.md` at the working directory root.
-- In a git repo, ask the user about adding it to `.gitignore` — the
-  default is **do not commit** (it is session state, not a code asset).
+- When creating a new file in a git repo that does not ignore it yet,
+  ask the user about adding `HANDOFF*.md` to `.gitignore` — the default
+  is **do not commit** (it is session state, not a code asset).
 - After saving, tell the user the absolute path.
 
 ## Update logic (업데이트 로직)
