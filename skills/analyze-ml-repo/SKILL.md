@@ -188,6 +188,8 @@ What goes into each agent's prompt:
    tactics in `references/shape-tracing.md`.
 8. The user's original request, quoted verbatim — the report
    contract keys the report language off it.
+9. For model-architecture, the directory its `.drawio` files go in:
+   `<document name>-diagrams/` beside the Step 5-2 document path.
 
 Subagent execution protocol:
 - **Subagents know nothing about this conversation.** The prompt
@@ -226,8 +228,9 @@ When all subagent results are back:
 2. **Sample-verify — do not trust the report**: from each report,
    pick 2–3 key shape/number claims and open the cited file:line to
    check the code really says what the report claims. Citation
-   existence and Mermaid syntax are checked mechanically in Step 5
-   by `scripts/verify_report.py` — spend the manual samples on
+   existence, Mermaid syntax and draw.io files are checked
+   mechanically in Step 5 by `scripts/verify_report.py` — spend the
+   manual samples on
    meaning, not existence. If even one sample is wrong, distrust the
    rest of that agent's claims and widen the verification.
 3. **Cross-check boundaries**: confirm that the seams between agents
@@ -239,6 +242,7 @@ When all subagent results are back:
    | data-pipeline batch output ↔ model forward input | keys, shapes, dtypes |
    | model forward output ↔ loss input | shapes |
    | training checkpoint structure ↔ inference load code | saved/loaded keys |
+   | training preprocessing ↔ inference preprocessing | shared code or a second implementation; vocab, statistics, truncation |
 
 4. **Merge fanned-out instances**: when a role ran as multiple
    instances (one per model/dataset), merge them into that role's
@@ -253,8 +257,9 @@ When all subagent results are back:
 ### 5-1. Assemble the markdown document
 
 Assemble the subagent results into the structure below. Diagrams
-follow the rules in `references/diagram-rules.md` (Mermaid/markdown
-tables), and every section links the relevant source file paths.
+follow the rules in `references/diagram-rules.md` (Mermaid, draw.io
+files, markdown tables), and every section links the relevant source
+file paths.
 Translate the section titles into the conversation language; the
 section order stays fixed.
 
@@ -271,23 +276,24 @@ state what is and is not covered in Scope and assumptions.
 from Step 2, and unverified items carried over from the agent reports.)
 
 ## End-to-end workflow
-(Top-level system diagram — data prep -> training -> inference ->
-output. Owned by structure-scout. The inference-only sub-pipeline
-belongs in section 4, owned by inference-analyst — do not duplicate
-the whole-system flow there.)
+(C4 container diagram of the whole system — data prep -> training ->
+inference -> output. Owned by structure-scout. The component diagram
+of the inference container belongs in section 4, owned by
+inference-analyst — do not duplicate the whole-system flow there.)
 ### Project structure and entry points
 (Directory map, CLI commands and the Job/Runner each invokes,
 hyperparameter catalog by category. Owned by structure-scout.)
 
 ## 1. Data pipeline
 ### 1-1. Raw data schema
-### 1-2. Preprocessing pipeline
-### 1-3. Dataset -> Collate shapes
-### 1-4. Concrete data examples (raw rows, batch tensors)
+### 1-2. Splits and label construction
+### 1-3. Preprocessing pipeline
+### 1-4. Dataset -> Collate shapes
+### 1-5. Concrete data examples (raw rows, batch tensors)
 
 ## 2. Model architecture
 ### 2-1. Constructor parameter table (actual config values; owned by model-architecture)
-### 2-2. Forward pass shape trace (line by line)
+### 2-2. Forward pass shape trace (line by line, with a link to the model's `.drawio` file)
 ### 2-3. Core block analysis (with visualizations)
 
 ## 3. Training workflow
@@ -299,8 +305,8 @@ hyperparameter catalog by category. Owned by structure-scout.)
 ### 3-6. CLI run examples
 
 ## 4. Inference & outputs
-(Inference-only sub-pipeline diagram lives here, owned by
-inference-analyst — not the whole-system flow.)
+(C4 component diagram of the inference container lives here, owned
+by inference-analyst — not the whole-system flow.)
 ### 4-1. Inference input/output shapes
 ### 4-2. Output schema
 ### 4-3. Serving optimizations
@@ -327,11 +333,13 @@ inference-analyst — not the whole-system flow.)
    <analyzed-repo-root>`. It checks every file:line citation against
    that tree only (file exists, line within file length; a bare
    basename that matches several files is reported as ambiguous with
-   the candidates) and lints Mermaid blocks (direction stated, labels
-   with brackets/parens quoted, subgraph/end balanced). A failure that
-   names same-basename candidates is a missing path prefix — fix the
-   cited path; every other failure is fixed by reopening the code, never
-   by deleting evidence. Re-run until it prints `result: OK`.
+   the candidates), lints Mermaid blocks (direction stated, labels
+   with brackets/parens quoted, subgraph/end balanced) and checks each
+   linked `.drawio` file (exists, parses, cell references resolve).
+   A failure that names same-basename candidates is a missing path
+   prefix — fix the cited path; every other failure is fixed by
+   reopening the code, never by deleting evidence. Re-run until it
+   prints `result: OK`.
 3. In chat, present only the key summary (end-to-end workflow plus a
    few main findings) and the `.md` file path. Do not paste the full
    document back into the chat.

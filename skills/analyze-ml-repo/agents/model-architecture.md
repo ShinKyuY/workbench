@@ -73,10 +73,12 @@ If the model has multiple modes (train/eval) or tasks
 
 ### 5. Architecture diagram
 
-Render the full forward pass as a Mermaid block diagram.
+Draw the full forward pass as a draw.io file, write it to the diagram
+directory given in your prompt, and state the file path in your
+report.
 
-Follow rules D3 (forward pass) and D4 (structural pattern
-visualization) from the diagram rules included in your prompt.
+Follow rules D3 (forward pass), D4 (structural pattern visualization)
+and the draw.io rules from the diagram rules included in your prompt.
 
 ## Output rules
 

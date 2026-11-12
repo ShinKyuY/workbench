@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify an analysis document's code citations and Mermaid blocks.
+"""Verify an analysis document's code citations and diagrams.
 
 Usage:
     python3 verify_report.py <doc.md> --repo <analyzed-repo-root>
@@ -7,12 +7,14 @@ Usage:
 Checks every `path:line` / `path:start-end` citation in the document
 (file exists under the repo root, line numbers within file length) and
 lints Mermaid blocks (direction stated, labels with brackets/parens
-quoted, subgraph/end balanced). Exit 0 when clean, 1 when anything fails.
+quoted, subgraph/end balanced) and checks every linked `.drawio` file
+(exists, parses as uncompressed draw.io XML, cell references resolve).
+Exit 0 when clean, 1 when anything fails.
 
 Stdlib only. Sample-verification of *meaning* (does the cited code say
 what the report claims?) stays a human/orchestrator job — this script
 only removes the mechanical part: hallucinated paths, out-of-range
-lines, diagrams that fail to render.
+lines, diagrams that fail to render or open.
 """
 
 from __future__ import annotations
@@ -20,7 +22,9 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
+from urllib.parse import unquote
 
 CITATION_RE = re.compile(
     r"(?P<path>[A-Za-z0-9_.\-/]*[A-Za-z0-9_\-]\.[A-Za-z][A-Za-z0-9_]*)"
@@ -32,6 +36,7 @@ URL_RE = re.compile(r"\bhttps?://\S+|\bwww\.\S+")
 # because existence is checked first.
 HOSTLIKE_EXTS = {"com", "net", "org", "io", "ai", "dev"}
 DIRECTIONS = {"TD", "TB", "BT", "LR", "RL"}
+DRAWIO_LINK_RE = re.compile(r"\]\(([^)\s]+\.drawio)\)")
 QUOTED_RE = re.compile(r'"[^"]*"')
 # After quoted labels are removed: an id + opener whose text holds another
 # opener (A[Conv2d(3)], A(x [B]), A[d {k}]), or an edge label right after an
@@ -179,6 +184,40 @@ def check_mermaid(doc_text: str) -> tuple[int, list[str]]:
     return len(blocks), failures
 
 
+def check_drawio(doc_text: str, doc_dir: Path) -> tuple[int, list[str]]:
+    links = sorted(set(DRAWIO_LINK_RE.findall(doc_text)))
+    failures: list[str] = []
+    for link in links:
+        path = doc_dir / unquote(link)
+        if not path.is_file():
+            failures.append(f"{link}: file not found")
+            continue
+        try:
+            root = ET.parse(path).getroot()
+        except ET.ParseError as exc:
+            failures.append(f"{link}: not well-formed XML ({exc})")
+            continue
+        models = root.findall("./diagram/mxGraphModel") if root.tag == "mxfile" else []
+        if not models:
+            failures.append(f"{link}: no uncompressed <mxfile>/<diagram>/<mxGraphModel>")
+            continue
+        for page, model in enumerate(models, 1):
+            cells = model.findall("./root/mxCell")
+            ids = {c.get("id") for c in cells}
+            for c in cells:
+                for attr in ("parent", "source", "target"):
+                    ref = c.get(attr)
+                    if ref is not None and ref not in ids:
+                        failures.append(
+                            f"{link} page {page}: cell {c.get('id')} {attr}={ref} does not exist"
+                        )
+                if c.get("edge") == "1" and not (c.get("source") and c.get("target")):
+                    failures.append(
+                        f"{link} page {page}: edge {c.get('id')} lacks source or target"
+                    )
+    return len(links), failures
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("doc", type=Path, help="analysis markdown document")
@@ -197,6 +236,7 @@ def main() -> int:
 
     checked, ignored, cite_fail = check_citations(doc_text, roots)
     n_blocks, mer_fail = check_mermaid(doc_text)
+    n_drawio, drawio_fail = check_drawio(doc_text, args.doc.parent)
 
     print(f"citations: {checked} checked, {checked - len(cite_fail)} ok, "
           f"{len(cite_fail)} failed, {ignored} ignored (host-like)")
@@ -214,8 +254,11 @@ def main() -> int:
     print(f"mermaid: {n_blocks} blocks, {len(mer_fail)} failures")
     for f in mer_fail:
         print(f"  FAIL {f}")
+    print(f"drawio: {n_drawio} files, {len(drawio_fail)} failures")
+    for f in drawio_fail:
+        print(f"  FAIL {f}")
 
-    if cite_fail or mer_fail:
+    if cite_fail or mer_fail or drawio_fail:
         print("result: FAIL")
         return 1
     print("result: OK")

@@ -30,16 +30,16 @@ config files only to fill gaps, not from scratch. Produce:
 - Architecture description
 - Extract term definitions
 
-### 5. End-to-end pipeline flowchart
+### 5. End-to-end container diagram
 
 Draw the full flow — data preparation -> training -> inference ->
-output — as a Mermaid flowchart. **You own the whole-system
+output — as a C4 container diagram. **You own the whole-system
 top-level diagram** (the final document's "End-to-end workflow"
-section). The inference-analyst draws only the inference-only
-sub-pipeline; do not overlap.
+section). The inference-analyst draws the component diagram of the
+inference container; do not overlap.
 
-Follow rule D1 (end-to-end pipeline) from the diagram rules included
-in your prompt when drawing diagrams.
+Follow rule D1 (system diagrams) and the C4 rules from the diagram
+rules included in your prompt when drawing diagrams.
 
 ## Output rules
 
