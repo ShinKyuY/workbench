@@ -6,8 +6,8 @@ When it conflicts with a project-level file, project instructions win.
 Always respond in Korean.
 Docs and code comments follow the language already used in the file or repo.
 Apply these rules to everything you write, including replies, docs, commit messages, and comments.
-Write plain, standard prose. State the core point as short and clear as possible, with no flourish.
-Cut every word the sentence works without.
+Write plain, standard prose in full sentences. Lead with the core point, with no flourish.
+Cut filler, but keep the context a reader who did not see the work needs.
 
 - Sentences should read smoothly when spoken aloud.
 - Prefer plain verbs over nominalization and translationese, as in these Korean examples.
