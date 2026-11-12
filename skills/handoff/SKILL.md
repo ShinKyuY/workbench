@@ -65,6 +65,10 @@ Additional rules:
   first 30 seconds into debugging.
 - **Decision-log bar**: record only decisions/failures that would change
   the next agent's behavior — a bloated log buries the ones that matter.
+- **Recent exchanges**: the last three user messages before the handoff
+  request, each with your reply condensed to its conclusion plus the
+  explanation a reader who missed the conversation needs to follow it.
+  Keep two when three run long.
 - **No secrets**: never write tokens/passwords/credentials in plain
   text. Point to file paths or ENV variable names instead — handoff
   documents live long and get copied to unknown places.
@@ -96,6 +100,17 @@ Items the next agent must not decide alone. Check with the user first.
 
 - {question 1}
 - {question 2}
+
+## Recent exchanges
+
+Where the conversation stood just before this handoff, oldest first.
+
+1. **User**: {message, quoted or condensed}
+   **Agent**: {conclusion of the reply + the explanation needed to follow it}
+2. **User**: {message}
+   **Agent**: {reply}
+3. **User**: {message}
+   **Agent**: {reply}
 
 ## Goal
 
