@@ -1,4 +1,4 @@
-# Model Architecture Analyst (모델 아키텍처 분석)
+# Model Architecture Analyst
 
 Agent that analyzes model structure, forward-pass tensor shape
 tracing, and core computation blocks.

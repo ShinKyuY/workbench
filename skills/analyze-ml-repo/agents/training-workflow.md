@@ -1,4 +1,4 @@
-# Training Workflow Analyst (학습 워크플로우 분석)
+# Training Workflow Analyst
 
 Agent that analyzes the training loop, loss, optimizer, distributed
 training, and checkpoints.

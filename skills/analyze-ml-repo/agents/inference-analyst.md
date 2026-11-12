@@ -1,4 +1,4 @@
-# Inference Analyst — Inference/Serving Analysis (추론/서빙 분석)
+# Inference Analyst — Inference/Serving Analysis
 
 Agent that analyzes the inference pipeline, output schema, and
 serving optimizations.

@@ -1,4 +1,4 @@
-# Structure Scout — Project Structure Analysis (프로젝트 구조 분석)
+# Structure Scout — Project Structure Analysis
 
 Agent that maps the overall structure, entry points, and execution
 flow of an ML project.

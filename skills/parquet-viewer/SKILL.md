@@ -3,8 +3,8 @@ name: parquet-viewer
 description: >-
   Launches a browser table viewer for Parquet files (single file,
   multi-part directory, HDFS download). Use when the user wants to
-  view, inspect, or preview parquet data — "parquet 열어줘",
-  "데이터 미리보기", "테이블 뷰어".
+  view, inspect, or preview parquet data — "open this parquet",
+  "preview the data", "table viewer".
 ---
 
 # Parquet Viewer

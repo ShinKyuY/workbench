@@ -5,14 +5,13 @@ description: >-
   architecture, training/data pipelines, tensor shapes, read from
   source. Use whenever model training or inference code needs
   explaining, even without the word "analyze": "how does this model
-  work?", "trace the data flow", "이 모델 어떻게 동작해?", "데이터가 어떻게
-  흘러가?", or "코드 구조 분석해줘" on an ML repo. Not for anything that
-  is not ML repo code: non-ML codebases, refactoring or bug fixing,
-  explaining papers or ML theory without a repo, exploring datasets, or
-  running training/inference.
+  work?", "trace the data flow", or "analyze the code structure" on an
+  ML repo. Not for anything that is not ML repo code: non-ML codebases,
+  refactoring or bug fixing, explaining papers or ML theory without a
+  repo, exploring datasets, or running training/inference.
 ---
 
-# ML Repository Analyzer (ML 레포 구조 분석)
+# ML Repository Analyzer
 
 Analyzes an ML/AI model repository with the smallest workflow that fits
 the request: answer narrow questions directly, or use specialized
@@ -26,7 +25,7 @@ Every shape or number claim carries file:line evidence and is
 labeled confirmed, inferred, or unavailable. Read code first; docs
 are supplements.
 
-## Output mode routing (출력 방식 라우팅)
+## Output mode routing
 
 Route by how much reading the answer needs, not by matching phrases —
 the same wording ("how does the model work?") can be either mode
@@ -49,7 +48,7 @@ depending on scope:
 
 ---
 
-## Step 1: Reconnaissance (정찰 — 직접 수행)
+## Step 1: Reconnaissance
 
 Before dispatching subagents, map the skeleton of the repo yourself.
 This information is what lets you give each subagent a precise
@@ -101,7 +100,7 @@ plan.
 
 ---
 
-## Step 2: Build the dispatch plan (동적 투입 계획)
+## Step 2: Build the dispatch plan
 
 Not every analysis is needed every time, and one agent per role is
 not always enough. Build the plan in two passes: pick the **roles**
@@ -114,12 +113,12 @@ These rows apply in document mode; a quick answer never dispatches.
 
 | Request type | Roles to dispatch |
 |--------------|--------------------|
-| "Analyze the whole structure" (전체 구조 분석) | all 5 |
-| "What are the data shapes?" (데이터 형상) | structure-scout + data-pipeline |
-| "How does the model work?" (모델 동작) | structure-scout + model-architecture |
-| "How is it trained?" (학습 방법) | structure-scout + training-workflow |
-| "Summarize the workflow" (워크플로우 정리) | structure-scout + data-pipeline + training-workflow + inference-analyst |
-| "Analyze this one file" (단일 파일) | none — do it directly, no subagents |
+| "Analyze the whole structure" | all 5 |
+| "What are the data shapes?" | structure-scout + data-pipeline |
+| "How does the model work?" | structure-scout + model-architecture |
+| "How is it trained?" | structure-scout + training-workflow |
+| "Summarize the workflow" | structure-scout + data-pipeline + training-workflow + inference-analyst |
+| "Analyze this one file" | none — do it directly, no subagents |
 
 - Always perform the Step 1 reconnaissance yourself, in every case.
   structure-scout is separate from reconnaissance — it is the agent
@@ -142,7 +141,7 @@ row = one agent with its own file list.
   budget and justified by the two families.
 - structure-scout fans out the same way for monorepo subprojects.
 
-Agent budget (예산) — these are full readers, not cheap verifiers:
+Agent budget — these are full readers, not cheap verifiers:
 - Default budget **8 agents** per analysis; exceed it only when
   independent targets force it, and say why in the plan.
 - Hard cap **14 agents** — never exceed it. Past the cap, never drop
@@ -154,7 +153,7 @@ Agent budget (예산) — these are full readers, not cheap verifiers:
 
 ---
 
-## Step 3: Dispatch specialist subagents in parallel (병렬 투입)
+## Step 3: Dispatch specialist subagents in parallel
 
 Dispatch the Step 2 plan **concurrently** — one agent per plan row.
 Give each agent the concrete file paths of its own row's target.
@@ -190,7 +189,7 @@ What goes into each agent's prompt:
 8. The user's original request, quoted verbatim — the report
    contract keys the report language off it.
 
-Subagent execution protocol (실행 프로토콜):
+Subagent execution protocol:
 - **Subagents know nothing about this conversation.** The prompt
   carries everything above; items 5, 6 and 8 go to every agent.
 - Parallel dispatch only works when all Agent calls are sent
@@ -215,7 +214,7 @@ check) applies unchanged.
 
 ---
 
-## Step 4: Synthesize and verify (결과 종합과 검증)
+## Step 4: Synthesize and verify
 
 When all subagent results are back:
 
@@ -249,7 +248,7 @@ When all subagent results are back:
 
 ---
 
-## Step 5: Assemble the final markdown document (문서 조립)
+## Step 5: Assemble the final markdown document
 
 ### 5-1. Assemble the markdown document
 

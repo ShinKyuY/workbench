@@ -1,4 +1,4 @@
-# Shape Tracing Tactics (텐서 형상 추적 전술)
+# Shape Tracing Tactics
 
 Use these when a tensor shape is **not obvious from reading the code**
 — runtime-decided dimensions, `einops`/`rearrange`, collapsing
