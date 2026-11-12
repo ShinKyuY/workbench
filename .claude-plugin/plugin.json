@@ -1,7 +1,7 @@
 {
   "name": "workbench",
   "description": "handoff: 세션 인수인계 문서화, analyze-ml-repo: ML 레포 구조와 데이터 흐름 분석, parquet-viewer: Parquet 브라우저 뷰어",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "author": {
     "name": "ky.shin",
     "email": "p37329@gmail.com"
