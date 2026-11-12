@@ -32,16 +32,15 @@ Record every optimization technique found in the code:
 - Model optimization (TorchScript, ONNX, TensorRT, quantization)
 - Index/retrieval structures (ANN, FAISS, ... — when applicable)
 
-### 5. Inference sub-pipeline
+### 5. Inference component diagram
 
 Draw the input -> preprocessing -> model -> post-processing ->
-output flow as a Mermaid flowchart. This is the **inference-only
-sub-pipeline** — the structure-scout owns the whole-system top-level
-diagram, so scope yours to the serving path and do not redraw
-training/data-prep stages.
+output flow as a C4 component diagram of the inference container.
+The structure-scout owns the whole-system container diagram, so scope
+yours to the serving path and do not redraw training/data-prep stages.
 
-Follow rule D1 (end-to-end pipeline) from the diagram rules included
-in your prompt when drawing diagrams.
+Follow rule D1 (system diagrams) and the C4 rules from the diagram
+rules included in your prompt when drawing diagrams.
 
 ## Output rules
 
@@ -51,6 +50,9 @@ Beyond the report contract in your prompt:
   data/tests/logs when available. If only code/schema is available,
   label the values as inferred; if no honest sample can be derived,
   write `unavailable` and name what evidence is missing.
+- Always state which preprocessing code the inference path runs
+  (functions, vocab and statistics files) — this is the boundary
+  cross-checked against the training data pipeline.
 - Always state the list of keys read by the model/checkpoint load
   code — this is the boundary cross-checked against the training
   checkpoint structure.

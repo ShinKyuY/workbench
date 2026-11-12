@@ -1,8 +1,8 @@
 # Diagram Rules
 
 ## Contents
-- Format table, common rules, Mermaid rules
-- D1. End-to-end pipeline diagram (required)
+- Format table, common rules, Mermaid rules, C4 rules, draw.io rules
+- D1. System diagrams: C4 container and component (required)
 - D2. Data shape transition table (required)
 - D3. Model forward pass diagram (required)
 - D4. Structural pattern visualization (when applicable)
@@ -13,12 +13,14 @@ The final markdown document must include the diagrams below; a
 partial analysis includes D1 plus only the diagrams of the sections
 it keeps. Complex
 ML pipelines are hard to understand from prose alone, so the diagrams
-are a core deliverable. Use formats that render well in common
-markdown viewers:
+are a core deliverable. System diagrams, tables, and trees use formats
+that render in common markdown viewers; model internals are draw.io
+files the reader opens and rearranges:
 
 | Content | Format |
 |---------|--------|
-| Flow/structure (pipeline, forward pass, skip connections) | Mermaid `flowchart` |
+| System and pipeline design (end-to-end, inference) | C4 container/component diagram, drawn as a Mermaid `flowchart` |
+| Model internals (forward pass, skip connections) | draw.io file (`.drawio`), linked from the document |
 | Shape transitions, model comparison | markdown table |
 | Directory trees, attention-mask grids | code block |
 
@@ -52,27 +54,98 @@ than Mermaid and tables.
   the label: `subgraph BLK["TransformerBlock × 12"]`.
 - Use `<br/>` for line breaks inside nodes.
 
+## C4 rules
+
+System and pipeline diagrams follow the C4 model at two levels, one
+level per diagram:
+
+- **Container**: every separately runnable or deployable unit and
+  every data store — preprocessing job, training job, evaluation job,
+  inference service, raw data store, checkpoint store, model registry.
+- **Component**: the building blocks inside one container — Dataset,
+  collate, model, loss, optimizer, checkpointer inside a training job;
+  request parsing, model, post-processing inside an inference service.
+  Layers inside the model sit below this level and belong to D3.
+
+Draw them as Mermaid flowcharts:
+
+- Each node label has three lines: name, `[Container: technology]` or
+  `[Component: code unit]`, and what it is responsible for.
+- A `subgraph` is the boundary: the system in a container diagram, the
+  one container in a component diagram. Whatever lies outside it
+  (upstream data, clients, neighbouring containers) stays outside the
+  subgraph.
+- Data stores use the cylinder shape: `DB[("...")]`.
+- Label every edge with what crosses it — data format, artifact, or
+  tensor shape.
+
+## draw.io rules
+
+Markdown viewers do not render draw.io files inline, so the document
+links each file from the section it belongs to.
+
+- One file per model: `<model>.drawio` in the diagram directory given
+  in your prompt. Page 1 is the forward pass (D3); each structural
+  pattern (D4) gets a page of its own (`<diagram name="...">`).
+- Write uncompressed XML: `<mxfile>` → `<diagram>` → `<mxGraphModel>` →
+  `<root>`, starting with `<mxCell id="0"/>` and
+  `<mxCell id="1" parent="0"/>`.
+- Every block is a vertex with an explicit `<mxGeometry>`. Lay blocks
+  out on a regular grid so nothing overlaps.
+- A repeated block is a container vertex with the repeat count in its
+  label. Its children set `parent` to the container id and use
+  coordinates relative to it.
+- Every edge names its `source` and `target` cell ids.
+- Labels are HTML: set `html=1` in the style, break lines with
+  `&lt;br&gt;`, and XML-escape `&`, `<`, `>` and `"` inside `value`.
+
 ---
 
-## D1. End-to-end pipeline diagram (required)
+## D1. System diagrams: C4 container and component (required)
 
-The top-level flowchart that shows at a glance which stages the
-whole system passes through, from data source to final output.
-Annotate each stage with the owning component and its input/output
-format.
+**Container diagram** — the top-level view of the whole system, from
+data source to final output: which containers exist and what flows
+between them.
 
 Example (CTR ranking model):
 ```mermaid
-flowchart TD
-    A["Log Parquet<br/>user_id, item_seq, labels"]
-    B["Preprocess<br/>vocab encoding + truncation (max_len=512)"]
-    C["RankingDataset → DataLoader (B=1024)"]
-    D["RankingModel<br/>input_ids [1024, 512] → logits [1024, 1]"]
-    E["sigmoid → CTR prediction"]
-    A --> B --> C --> D --> E
+flowchart LR
+    LOGS[("Click logs<br/>[Container: Parquet on HDFS]<br/>user_id, item_seq, labels")]
+    subgraph SYS["CTR ranking system"]
+        PREP["Preprocess job<br/>[Container: PySpark]<br/>vocab encoding, truncation (max_len=512)"]
+        SHARDS[("Training shards<br/>[Container: Parquet]<br/>item_seq [512], label")]
+        TRAIN["Training job<br/>[Container: PyTorch DDP]<br/>fits RankingModel"]
+        CKPT[("Checkpoints<br/>[Container: filesystem]<br/>model.pt, config.json")]
+        SERVE["Scoring service<br/>[Container: TorchServe]<br/>returns CTR per candidate"]
+    end
+    LOGS -->|"raw rows"| PREP
+    PREP -->|"encoded rows"| SHARDS
+    SHARDS -->|"batch: input_ids [1024, 512]"| TRAIN
+    TRAIN -->|"state_dict"| CKPT
+    CKPT -->|"model.pt"| SERVE
 ```
 
-Adapt to the project's architecture — the example above is only one
+**Component diagram** — the inside of one container, drawn by the
+role that analyzes it (the inference container by inference-analyst).
+
+Example (the scoring service above):
+```mermaid
+flowchart LR
+    CLIENT["Ranking client<br/>[External system]"]
+    CKPT[("Checkpoints<br/>[Container: filesystem]")]
+    subgraph SERVE["Scoring service [Container: TorchServe]"]
+        PARSE["Request parser<br/>[Component: handler.preprocess]<br/>JSON → padded item_seq"]
+        MODEL["RankingModel<br/>[Component: nn.Module]<br/>scores each candidate"]
+        POST["Post-processor<br/>[Component: handler.postprocess]<br/>sigmoid, top-k"]
+    end
+    CLIENT -->|"candidates JSON"| PARSE
+    PARSE -->|"input_ids [B, 512]"| MODEL
+    MODEL -->|"logits [B, 1]"| POST
+    POST -->|"CTR scores"| CLIENT
+    CKPT -->|"model.pt"| MODEL
+```
+
+Adapt to the project's architecture — the examples above are only one
 shape it can take.
 
 ---
@@ -104,41 +177,51 @@ Adapt to the project's data types.
 
 ## D3. Model forward pass diagram (required)
 
-Visualize how tensors flow inside the model, block by block. State
-the input/output shapes of each block.
+Draw how tensors flow inside the model, block by block, as page 1 of
+the model's draw.io file. State the input/output shapes of each block.
 
 Example (Transformer):
-```mermaid
-flowchart TD
-    IN["tokens [B, N]"]
-    EMB["Embedding(V=50k, D=512) + PosEmb<br/>→ [B, N, 512]"]
-    subgraph BLK["TransformerBlock × 12"]
-        direction TB
-        MHA["LN → MHA(D=512, H=8)<br/>Q,K,V: [B, 8, N, 64]<br/>+ residual"]
-        FFN["LN → FFN(512→2048→512)<br/>+ residual"]
-        MHA --> FFN
-    end
-    OUT["LN → head [B, N, V]"]
-    IN --> EMB --> BLK --> OUT
-```
-
-Example (recsys multi-task):
-```mermaid
-flowchart TD
-    F["cat_ids [B, F_cat]<br/>dense [B, 16], seq [B, T]"]
-    E1["Embedding tables (V_i × 64)<br/>→ [B, F, 64]"]
-    INT["Feature Interaction<br/>(attention/FM/DCN)<br/>→ [B, 256]"]
-    subgraph MM["MMoE: expert × 4"]
-        direction TB
-        EXP["experts → [B, 4, 256]"]
-        GATE["task gate softmax [B, 4]"]
-        EXP --> GATE
-    end
-    H1["CTR head → [B, 1]"]
-    H2["CVR head → [B, 1]"]
-    F --> E1 --> INT --> MM
-    MM --> H1
-    MM --> H2
+```xml
+<mxfile>
+  <diagram name="Forward pass">
+    <mxGraphModel>
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="in" value="tokens [B, N]" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="20" width="240" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="emb" value="Embedding(V=50k, D=512) + PosEmb&lt;br&gt;→ [B, N, 512]" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="100" width="240" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="blk" value="TransformerBlock × 12" style="swimlane;whiteSpace=wrap;html=1;startSize=30;" vertex="1" parent="1">
+          <mxGeometry x="100" y="190" width="320" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="mha" value="LN → MHA(D=512, H=8)&lt;br&gt;Q,K,V: [B, 8, N, 64]&lt;br&gt;+ residual" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="blk">
+          <mxGeometry x="40" y="50" width="240" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="ffn" value="LN → FFN(512→2048→512)&lt;br&gt;+ residual" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="blk">
+          <mxGeometry x="40" y="150" width="240" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="out" value="LN → head [B, N, V]" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="460" width="240" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="in" target="emb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="emb" target="blk">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="blk" source="mha" target="ffn">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="blk" target="out">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
 ```
 
 - State the parameter dimensions of every nn.Module submodule.
@@ -155,7 +238,7 @@ Visualize the architecture's key patterns. Not every project has
 them; draw them when found in the code.
 
 **Attention mask** (Transformer family):
-grids cannot be expressed in Mermaid, so keep a code block.
+a grid reads best as a code block.
 Rows = Query, columns = Key, with a legend for the symbols.
 ```
          Pos 0  1  2  3  4
@@ -168,19 +251,14 @@ Pos 4  [  #   #  #  #  # ]
 ```
 
 **Skip connection paths** (ResNet, U-Net, ...):
-visualize which layer connects to which with Mermaid.
-```mermaid
-flowchart LR
-    E1["[B,64,256,256]"] --> E2["[B,128,128,128]"] --> BN["Bottleneck<br/>[B,512,32,32]"]
-    BN --> D2["[B,256,128,128]"] --> D1["[B,128,256,256]"]
-    E1 -- concat --> D1
-    E2 -- concat --> D2
-```
+add a page to the model's draw.io file that shows which layer connects
+to which, with the shape on each block and the merge op (concat, add)
+on each skip edge.
 
 **Sharded embedding / communication patterns** (large-vocab
 recsys/ranking models): when embedding tables are sharded across
-ranks, visualize the shard split and the all-reduce/all-to-all
-communication flow with Mermaid.
+ranks, add a page to the model's draw.io file that shows the shard
+split and the all-reduce/all-to-all communication flow.
 
 **Receptive field** (CNN family):
 summarize the per-layer receptive field growth as a markdown table.

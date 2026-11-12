@@ -11,7 +11,18 @@ Dataset -> collate -> model input.
 - Fields/columns/directory structure and types
 - What one sample represents
 
-### 2. Preprocessing
+### 2. Splits and label construction
+
+- How train/validation/test are separated — by time, by group (user,
+  session, ...), at random, or as pre-split files — and where the
+  split is made
+- Whether anything fitted on data (vocab, normalization statistics,
+  feature selection) is computed before or after the split
+- How each label is built: source field, time window, and when it
+  becomes known relative to the features
+- Features that are not available at prediction time
+
+### 3. Preprocessing
 
 Analyze every preprocessing step found in the code. Which of the
 following applies depends on the architecture:
@@ -29,19 +40,19 @@ following applies depends on the architecture:
   multi-domain/multi-task label construction
 - **Other**: include every transformation found in the code
 
-### 3. Dataset `__getitem__` or `__iter__`
+### 4. Dataset `__getitem__` or `__iter__`
 
 - Input: the form of one raw sample
 - Processing: transforms, augmentation, target-separation logic
 - Output: the dict/tuple keys of one sample and each tensor's shape
 
-### 4. collate_fn
+### 5. collate_fn
 
 - All keys, dtypes, and shapes `[B, ...]` of the batch dict
 - Padding/mask/dynamic batching logic (if present)
 - If there is no custom collate, state the default_collate behavior
 
-### 5. Concrete data examples
+### 6. Concrete data examples
 
 Write examples with values confirmed from data or tests when available.
 If only schema/config/code is available, label the example as inferred.
