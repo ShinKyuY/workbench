@@ -1,4 +1,4 @@
-# Diagram Rules (다이어그램 규칙)
+# Diagram Rules
 
 ## Contents
 - Format table, common rules, Mermaid rules

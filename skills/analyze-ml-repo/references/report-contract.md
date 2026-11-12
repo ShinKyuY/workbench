@@ -1,4 +1,4 @@
-# Report Contract (보고 계약)
+# Report Contract
 
 Common output rules for every dispatched analysis agent. They apply
 together with the "Output rules" section of each agent's

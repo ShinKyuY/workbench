@@ -3,13 +3,13 @@ name: handoff
 description: >-
   Creates or updates HANDOFF.md so the next agent can take over from a
   cold start. Use on any work-continuity request — "handoff", "continue in
-  the next session", "인수인계", "다음 세션에서 이어서", "여기까지
-  정리해줘" — or when ending a session with background jobs running,
-  nearing the context limit, or delegating to another agent. Not for
-  reading an existing HANDOFF.md, commit messages, or meeting notes.
+  the next session", "write up where we are" — or when ending a session
+  with background jobs running, nearing the context limit, or delegating
+  to another agent. Not for reading an existing HANDOFF.md, commit
+  messages, or meeting notes.
 ---
 
-# Handoff Document Generation (인수인계 문서 생성)
+# Handoff Document Generation
 
 Write a structured HANDOFF.md so the next agent can **reach the same
 point within 30 seconds**. Length is not the goal. The three things that
@@ -19,7 +19,7 @@ Write the handoff document in the language of the conversation
 (Korean session → Korean document); the template structure stays the
 same.
 
-## Procedure (작성 절차)
+## Procedure
 
 ### 1. Check existing docs and gather context
 
@@ -183,7 +183,7 @@ _(omit this section when there is nothing to list)_
   is **do not commit** (it is session state, not a code asset).
 - After saving, tell the user the absolute path.
 
-## Update logic (업데이트 로직)
+## Update logic
 
 When a HANDOFF.md already exists:
 
@@ -197,7 +197,7 @@ When a HANDOFF.md already exists:
   update only what changed. Remove one only when invalidated, and leave
   a one-line note in the decision log.
 
-## Length guide (분량 가이드)
+## Length guide
 
 A long handoff gets skipped by the next agent. Keep each section to
 what changes the next agent's first actions. When the decision log

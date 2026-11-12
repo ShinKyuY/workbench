@@ -1,4 +1,4 @@
-# Framework Cues (프레임워크별 관용구)
+# Framework Cues
 
 Read this **right after you identify the repo's framework** in
 reconnaissance (Step 1). The reconnaissance patterns in `SKILL.md` are

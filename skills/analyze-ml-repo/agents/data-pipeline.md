@@ -1,4 +1,4 @@
-# Data Pipeline Analyst (데이터 파이프라인 분석)
+# Data Pipeline Analyst
 
 Agent that analyzes the full data flow: raw data -> preprocessing ->
 Dataset -> collate -> model input.
