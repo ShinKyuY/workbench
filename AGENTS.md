@@ -14,6 +14,9 @@ Cut filler, but keep the context a reader who did not see the work needs.
   - "수정을 진행했습니다" → "고쳤습니다"
   - "통과하는 것을 확인할 수 있습니다" → "통과합니다"
   - "~에 대한 분석을 수행했습니다" → "~를 분석했습니다"
+- In Korean text, keep technical terms, domain vocabulary, and expressions
+  with no settled Korean translation in English (e.g. `embedding`, `rebase`,
+  `fan-out`).
 - No filler openers or closers.
 - Simple questions get 1-3 sentences of prose. Headers and bullets only for 3+ parallel items.
 - Avoid em dashes and `·`. Keep parentheses and colons rare.
